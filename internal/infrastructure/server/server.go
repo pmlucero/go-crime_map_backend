@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	crimeHttp "go-crime_map_backend/internal/interfaces/http"
+	"go-crime_map_backend/internal/usecases"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,7 +19,7 @@ type Server struct {
 
 func NewServer() *Server {
 	router := gin.Default()
-	
+
 	// Configurar middleware básico
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
@@ -27,6 +30,17 @@ func NewServer() *Server {
 			"status": "ok",
 		})
 	})
+
+	// TODO: Inicializar el repositorio y el caso de uso
+	// Por ahora usamos nil como placeholder
+	createCrimeUseCase := usecases.NewCreateCrimeUseCase(nil)
+	crimeController := crimeHttp.NewCrimeController(createCrimeUseCase)
+
+	// Configurar rutas de delitos
+	crimes := router.Group("/api/v1/crimes")
+	{
+		crimes.POST("/", crimeController.Create)
+	}
 
 	return &Server{
 		router: router,
@@ -46,4 +60,4 @@ func (s *Server) Shutdown() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	return s.httpServer.Shutdown(ctx)
-} 
+}
