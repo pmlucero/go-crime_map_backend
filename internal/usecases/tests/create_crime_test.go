@@ -143,7 +143,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 				Location:    validLocation,
 				Date:        time.Now().Add(-1 * time.Hour),
 			},
-			expectedError: "error al guardar en el repositorio",
+			expectedError: "assert.AnError general error for testing",
 			setupMock: func() {
 				mockRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.Crime")).Return(assert.AnError)
 			},
