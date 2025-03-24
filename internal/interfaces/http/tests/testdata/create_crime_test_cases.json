@@ -1,0 +1,257 @@
+{
+  "test_cases": [
+    {
+      "name": "creación exitosa de delito",
+      "payload": {
+        "type": "VANDALISMO",
+        "description": "Vandalismo en la calle 123",
+        "location": {
+          "latitude": -34.603722,
+          "longitude": -58.381592,
+          "address": "Av. Corrientes 1234, CABA"
+        },
+        "date": "-24h"
+      },
+      "expected_status": 201,
+      "should_validate_db": true,
+      "expected_db_state": {
+        "count": 1,
+        "first_record": {
+          "type": "VANDALISMO",
+          "description": "Vandalismo en la calle 123",
+          "location": {
+            "latitude": -34.603722,
+            "longitude": -58.381592,
+            "address": "Av. Corrientes 1234, CABA"
+          }
+        }
+      }
+    },
+    {
+      "name": "error - tipo de delito inválido",
+      "payload": {
+        "type": "INVALID_TYPE",
+        "description": "Robo a mano armada",
+        "location": {
+          "latitude": -34.603722,
+          "longitude": -58.381592,
+          "address": "Av. Corrientes 1234, CABA"
+        },
+        "date": "-24h"
+      },
+      "expected_status": 400,
+      "should_validate_db": true,
+      "expected_db_state": {
+        "count": 0
+      }
+    },
+    {
+      "name": "error - fecha futura",
+      "payload": {
+        "type": "ROBO",
+        "description": "Robo a mano armada",
+        "location": {
+          "latitude": -34.603722,
+          "longitude": -58.381592,
+          "address": "Av. Corrientes 1234, CABA"
+        },
+        "date": "+24h"
+      },
+      "expected_status": 400,
+      "should_validate_db": true,
+      "expected_db_state": {
+        "count": 0
+      }
+    },
+    {
+      "name": "error - inserción duplicada",
+      "payload": {
+        "type": "ROBO",
+        "description": "Robo a mano armada",
+        "location": {
+          "latitude": -34.603722,
+          "longitude": -58.381592,
+          "address": "Av. Corrientes 1234, CABA"
+        },
+        "date": "-24h"
+      },
+      "expected_status": 409,
+      "should_validate_db": true,
+      "expected_db_state": {
+        "count": 1
+      }
+    },
+    {
+      "name": "error - ubicación incorrecta",
+      "payload": {
+        "type": "ROBO",
+        "description": "Robo a mano armada",
+        "location": {
+          "latitude": 91.0,
+          "longitude": 181.0,
+          "address": "Ubicación inválida"
+        },
+        "date": "-24h"
+      },
+      "expected_status": 400,
+      "should_validate_db": true,
+      "expected_db_state": {
+        "count": 0
+      }
+    },
+    {
+      "name": "error - falta tipo de delito",
+      "payload": {
+        "description": "Robo a mano armada",
+        "location": {
+          "latitude": -34.603722,
+          "longitude": -58.381592,
+          "address": "Av. Corrientes 1234, CABA"
+        },
+        "date": "-24h"
+      },
+      "expected_status": 400,
+      "should_validate_db": true,
+      "expected_db_state": {
+        "count": 0
+      }
+    },
+    {
+      "name": "error - falta descripción",
+      "payload": {
+        "type": "ROBO",
+        "location": {
+          "latitude": -34.603722,
+          "longitude": -58.381592,
+          "address": "Av. Corrientes 1234, CABA"
+        },
+        "date": "-24h"
+      },
+      "expected_status": 400,
+      "should_validate_db": true,
+      "expected_db_state": {
+        "count": 0
+      }
+    },
+    {
+      "name": "error - falta ubicación",
+      "payload": {
+        "type": "ROBO",
+        "description": "Robo a mano armada",
+        "date": "-24h"
+      },
+      "expected_status": 400,
+      "should_validate_db": true,
+      "expected_db_state": {
+        "count": 0
+      }
+    },
+    {
+      "name": "error - falta fecha",
+      "payload": {
+        "type": "ROBO",
+        "description": "Robo a mano armada",
+        "location": {
+          "latitude": -34.603722,
+          "longitude": -58.381592,
+          "address": "Av. Corrientes 1234, CABA"
+        }
+      },
+      "expected_status": 400,
+      "should_validate_db": true,
+      "expected_db_state": {
+        "count": 0
+      }
+    },
+    {
+      "name": "error - formato de fecha inválido",
+      "payload": {
+        "type": "ROBO",
+        "description": "Robo a mano armada",
+        "location": {
+          "latitude": -34.603722,
+          "longitude": -58.381592,
+          "address": "Av. Corrientes 1234, CABA"
+        },
+        "date": "fecha-invalida"
+      },
+      "expected_status": 400,
+      "should_validate_db": true,
+      "expected_db_state": {
+        "count": 0
+      }
+    },
+    {
+      "name": "error - fecha muy antigua",
+      "payload": {
+        "type": "ROBO",
+        "description": "Robo a mano armada",
+        "location": {
+          "latitude": -34.603722,
+          "longitude": -58.381592,
+          "address": "Av. Corrientes 1234, CABA"
+        },
+        "date": "-8760h"
+      },
+      "expected_status": 400,
+      "should_validate_db": true,
+      "expected_db_state": {
+        "count": 0
+      }
+    },
+    {
+      "name": "error - coordenadas en límite",
+      "payload": {
+        "type": "ROBO",
+        "description": "Robo a mano armada",
+        "location": {
+          "latitude": 90.0,
+          "longitude": 180.0,
+          "address": "Ubicación en límite"
+        },
+        "date": "-24h"
+      },
+      "expected_status": 400,
+      "should_validate_db": true,
+      "expected_db_state": {
+        "count": 0
+      }
+    },
+    {
+      "name": "error - dirección vacía",
+      "payload": {
+        "type": "ROBO",
+        "description": "Robo a mano armada",
+        "location": {
+          "latitude": -34.603722,
+          "longitude": -58.381592,
+          "address": ""
+        },
+        "date": "-24h"
+      },
+      "expected_status": 400,
+      "should_validate_db": true,
+      "expected_db_state": {
+        "count": 0
+      }
+    },
+    {
+      "name": "error - descripción muy larga",
+      "payload": {
+        "type": "ROBO",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+        "location": {
+          "latitude": -34.603722,
+          "longitude": -58.381592,
+          "address": "Av. Corrientes 1234, CABA"
+        },
+        "date": "-24h"
+      },
+      "expected_status": 400,
+      "should_validate_db": true,
+      "expected_db_state": {
+        "count": 0
+      }
+    }
+  ]
+} 
