@@ -7,6 +7,8 @@ import (
 
 	"go-crime_map_backend/internal/domain/entities"
 	"go-crime_map_backend/internal/domain/repositories"
+
+	"github.com/google/uuid"
 )
 
 // CreateCrimeInput representa los datos necesarios para crear un delito
@@ -63,7 +65,7 @@ func (uc *CreateCrimeUseCase) Execute(ctx context.Context, input CreateCrimeInpu
 
 	// Crear la entidad Crime
 	crime := &entities.Crime{
-		ID:          generateID(), // Esta función deberá ser implementada
+		ID:          generateID(),
 		Type:        input.Type,
 		Description: input.Description,
 		Location: entities.Location{
@@ -72,6 +74,7 @@ func (uc *CreateCrimeUseCase) Execute(ctx context.Context, input CreateCrimeInpu
 			Address:   input.Location.Address,
 		},
 		Date:      input.Date,
+		Status:    entities.CrimeStatusActive,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -86,6 +89,5 @@ func (uc *CreateCrimeUseCase) Execute(ctx context.Context, input CreateCrimeInpu
 
 // generateID genera un ID único para el delito
 func generateID() string {
-	// TODO: Implementar generación de ID único
-	return "temp-id"
+	return uuid.New().String()
 }

@@ -6,73 +6,36 @@ import (
 	"time"
 
 	"go-crime_map_backend/internal/domain/entities"
-	"go-crime_map_backend/internal/domain/repositories"
+	"go-crime_map_backend/internal/infrastructure/database"
+	"go-crime_map_backend/internal/infrastructure/repositories"
 	"go-crime_map_backend/internal/usecases"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
-// MockCrimeRepository es un mock del repositorio para pruebas
-type MockCrimeRepository struct {
-	mock.Mock
-}
+func TestCreateCrimeUseCase_Integration(t *testing.T) {
+	// Configurar base de datos de test
+	db := database.SetupTestDB(t)
+	defer database.CleanupTestDB(t)
 
-func (m *MockCrimeRepository) Create(ctx context.Context, crime *entities.Crime) error {
-	args := m.Called(ctx, crime)
-	return args.Error(0)
-}
+	// Crear el caso de uso con el repositorio real
+	repo := repositories.NewPostgresCrimeRepository(db)
+	useCase := usecases.NewCreateCrimeUseCase(repo)
 
-func (m *MockCrimeRepository) GetByID(ctx context.Context, id string) (*entities.Crime, error) {
-	args := m.Called(ctx, id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*entities.Crime), args.Error(1)
-}
-
-func (m *MockCrimeRepository) GetAll(ctx context.Context) ([]*entities.Crime, error) {
-	args := m.Called(ctx)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]*entities.Crime), args.Error(1)
-}
-
-func (m *MockCrimeRepository) Update(ctx context.Context, crime *entities.Crime) error {
-	args := m.Called(ctx, crime)
-	return args.Error(0)
-}
-
-func (m *MockCrimeRepository) Delete(ctx context.Context, id string) error {
-	args := m.Called(ctx, id)
-	return args.Error(0)
-}
-
-func (m *MockCrimeRepository) List(ctx context.Context, filter repositories.ListCrimesFilter) ([]*entities.Crime, error) {
-	args := m.Called(ctx, filter)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]*entities.Crime), args.Error(1)
-}
-
-func TestCreateCrimeUseCase_Execute(t *testing.T) {
-	mockRepo := new(MockCrimeRepository)
-	useCase := usecases.NewCreateCrimeUseCase(mockRepo)
-
-	// Datos de prueba comunes
+	// Datos de prueba
 	validLocation := usecases.Location{
 		Latitude:  -34.603722,
 		Longitude: -58.381592,
 		Address:   "Av. Corrientes 1234",
 	}
 
+	// Fecha de prueba en UTC
+	testDate := time.Now().Add(-1 * time.Hour).UTC()
+
 	tests := []struct {
 		name          string
 		input         usecases.CreateCrimeInput
 		expectedError string
-		setupMock     func()
 	}{
 		{
 			name: "creación exitosa de delito",
@@ -80,10 +43,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 				Type:        "robo",
 				Description: "Robo a mano armada",
 				Location:    validLocation,
-				Date:        time.Now().Add(-1 * time.Hour),
-			},
-			setupMock: func() {
-				mockRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.Crime")).Return(nil)
+				Date:        testDate,
 			},
 		},
 		{
@@ -92,7 +52,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 				Type:        "",
 				Description: "Robo a mano armada",
 				Location:    validLocation,
-				Date:        time.Now().Add(-1 * time.Hour),
+				Date:        testDate,
 			},
 			expectedError: "el tipo de delito es requerido",
 		},
@@ -102,7 +62,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 				Type:        "robo",
 				Description: "",
 				Location:    validLocation,
-				Date:        time.Now().Add(-1 * time.Hour),
+				Date:        testDate,
 			},
 			expectedError: "la descripción es requerida",
 		},
@@ -112,7 +72,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 				Type:        "robo",
 				Description: "Robo a mano armada",
 				Location:    validLocation,
-				Date:        time.Now().Add(24 * time.Hour),
+				Date:        time.Now().Add(24 * time.Hour).UTC(),
 			},
 			expectedError: "la fecha del delito no puede ser futura",
 		},
@@ -126,7 +86,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 					Longitude: -58.381592,
 					Address:   "Av. Corrientes 1234",
 				},
-				Date: time.Now().Add(-1 * time.Hour),
+				Date: testDate,
 			},
 			expectedError: "latitud inválida",
 		},
@@ -140,35 +100,14 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 					Longitude: 181.0, // Longitud inválida
 					Address:   "Av. Corrientes 1234",
 				},
-				Date: time.Now().Add(-1 * time.Hour),
+				Date: testDate,
 			},
 			expectedError: "longitud inválida",
-		},
-		{
-			name: "error - fallo en el repositorio",
-			input: usecases.CreateCrimeInput{
-				Type:        "robo",
-				Description: "Robo a mano armada",
-				Location:    validLocation,
-				Date:        time.Now().Add(-1 * time.Hour),
-			},
-			expectedError: "assert.AnError general error for testing",
-			setupMock: func() {
-				mockRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.Crime")).Return(assert.AnError)
-			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Limpiar las expectativas del mock
-			mockRepo.ExpectedCalls = nil
-
-			// Configurar el mock si es necesario
-			if tt.setupMock != nil {
-				tt.setupMock()
-			}
-
 			// Ejecutar el caso de uso
 			result, err := useCase.Execute(context.Background(), tt.input)
 
@@ -188,11 +127,21 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 			assert.Equal(t, tt.input.Location.Latitude, result.Location.Latitude)
 			assert.Equal(t, tt.input.Location.Longitude, result.Location.Longitude)
 			assert.Equal(t, tt.input.Location.Address, result.Location.Address)
-			assert.Equal(t, tt.input.Date, result.Date)
+			assert.Equal(t, tt.input.Date.UTC(), result.Date.UTC())
 			assert.Equal(t, entities.CrimeStatusActive, result.Status)
 
-			// Verificar que se llamó al repositorio
-			mockRepo.AssertExpectations(t)
+			// Verificar que el delito se guardó en la base de datos
+			savedCrime, err := repo.GetByID(context.Background(), result.ID)
+			assert.NoError(t, err)
+			assert.NotNil(t, savedCrime)
+			assert.Equal(t, result.ID, savedCrime.ID)
+			assert.Equal(t, result.Type, savedCrime.Type)
+			assert.Equal(t, result.Description, savedCrime.Description)
+			assert.Equal(t, result.Location.Latitude, savedCrime.Location.Latitude)
+			assert.Equal(t, result.Location.Longitude, savedCrime.Location.Longitude)
+			assert.Equal(t, result.Location.Address, savedCrime.Location.Address)
+			assert.Equal(t, result.Date.UTC(), savedCrime.Date.UTC())
+			assert.Equal(t, result.Status, savedCrime.Status)
 		})
 	}
 }
