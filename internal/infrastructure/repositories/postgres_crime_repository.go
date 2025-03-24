@@ -118,9 +118,8 @@ func (r *PostgresCrimeRepository) Update(ctx context.Context, crime *entities.Cr
 	query := `
 		UPDATE crimes
 		SET title = $1, description = $2, crime_type = $3, status = $4,
-			latitude = $5, longitude = $6, address = $7, updated_at = $8,
-			deleted_at = $9
-		WHERE id = $10
+			latitude = $5, longitude = $6, address = $7, updated_at = $8
+		WHERE id = $9 AND deleted_at IS NULL
 	`
 
 	result, err := r.db.ExecContext(ctx, query,
@@ -132,7 +131,6 @@ func (r *PostgresCrimeRepository) Update(ctx context.Context, crime *entities.Cr
 		crime.Location.Longitude,
 		crime.Location.Address,
 		crime.UpdatedAt,
-		crime.DeletedAt,
 		crime.ID,
 	)
 
@@ -146,7 +144,7 @@ func (r *PostgresCrimeRepository) Update(ctx context.Context, crime *entities.Cr
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("delito no encontrado")
+		return fmt.Errorf("delito no encontrado o ya eliminado")
 	}
 
 	return nil

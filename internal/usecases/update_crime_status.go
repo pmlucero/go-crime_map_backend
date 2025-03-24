@@ -53,8 +53,8 @@ func (uc *UpdateCrimeStatusUseCase) Execute(ctx context.Context, input UpdateCri
 // isValidStatusTransition valida si la transición de estado es válida
 func isValidStatusTransition(currentStatus, newStatus string) bool {
 	validTransitions := map[string][]string{
-		"active":   {"inactive"},
-		"inactive": {"active"},
+		"ACTIVE":   {"INACTIVE"},
+		"INACTIVE": {"ACTIVE"},
 	}
 
 	allowedStatuses, exists := validTransitions[currentStatus]
