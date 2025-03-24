@@ -1,83 +1,117 @@
-# Hoja de Ruta - Crime Map Backend
+# Roadmap del Proyecto
 
-## Estado Actual
-- ✅ Estructura base del proyecto con Clean Architecture
-- ✅ Implementación inicial del caso de uso para crear delitos
-- ✅ Configuración básica del servidor HTTP con Gin
-- ✅ Endpoint de health check
-- ✅ Endpoint básico para crear delitos
+## 1. Estructura del Proyecto
+- [x] Crear estructura base del proyecto
+- [x] Configurar módulo Go
+- [x] Implementar arquitectura limpia
+- [x] Configurar linter y formateador
 
-## Pendientes Inmediatos
+## 2. Dominio
+- [x] Definir entidades principales
+- [x] Crear interfaces de repositorio
+- [x] Implementar casos de uso básicos
+- [ ] Agregar validaciones de dominio
+- [ ] Implementar eventos de dominio
 
-### 1. Implementación de la Generación de IDs
-- [ ] Implementar generación de IDs únicos usando UUID v4
-- [ ] Agregar validación de formato de ID
-- [ ] Considerar implementar un servicio de generación de IDs distribuido
+## 3. Casos de Uso
+- [x] Implementar creación de delitos
+- [ ] Implementar actualización de delitos
+- [ ] Implementar eliminación de delitos
+- [ ] Implementar búsqueda de delitos
+- [ ] Implementar filtrado por ubicación
+- [ ] Implementar filtrado por fecha
+- [ ] Implementar filtrado por tipo de delito
 
-### 2. Implementación del Repositorio
-- [ ] Definir la base de datos a utilizar (PostgreSQL recomendado)
-- [ ] Crear la estructura de la base de datos
-- [ ] Implementar el repositorio concreto para PostgreSQL
-- [ ] Agregar migraciones de base de datos
-- [ ] Implementar manejo de conexiones y pool de conexiones
+## 4. Interfaces
+- [x] Implementar controlador HTTP
+- [ ] Implementar middleware de autenticación
+- [ ] Implementar middleware de autorización
+- [ ] Implementar middleware de logging
+- [ ] Implementar middleware de recuperación de errores
+- [ ] Implementar validación de request
+- [ ] Implementar manejo de errores HTTP
+- [ ] Implementar documentación de API (Swagger/OpenAPI)
 
-### 3. Validaciones de Negocio
-- [ ] Implementar validación de tipos de delitos permitidos
-- [ ] Agregar validación de fechas (no futuras, no muy antiguas)
-- [ ] Implementar validación de ubicaciones (dentro de límites geográficos)
-- [ ] Agregar validación de descripciones (longitud mínima/máxima)
-- [ ] Implementar sanitización de datos de entrada
+## 5. Infraestructura
+### 5.1 Persistencia
+- [x] Configurar PostgreSQL
+- [x] Crear esquema de base de datos
+- [x] Implementar repositorio PostgreSQL
+- [ ] Implementar migraciones de base de datos
+- [ ] Implementar seeds de datos iniciales
+- [ ] Implementar índices para optimizar consultas
+- [ ] Implementar caché para consultas frecuentes
+- [ ] Implementar backup automático
+- [ ] Implementar monitoreo de base de datos
+- [ ] Implementar pool de conexiones
+- [ ] Implementar retry mechanism para conexiones fallidas
+- [ ] Implementar circuit breaker para operaciones de base de datos
+- [ ] Implementar logging de queries para debugging
+- [ ] Implementar métricas de rendimiento de base de datos
 
-### 4. Endpoints Adicionales
-- [ ] Implementar GET /api/v1/crimes (listar todos los delitos)
-- [ ] Implementar GET /api/v1/crimes/:id (obtener un delito específico)
-- [ ] Implementar PUT /api/v1/crimes/:id (actualizar un delito)
-- [ ] Implementar DELETE /api/v1/crimes/:id (eliminar un delito)
-- [ ] Agregar paginación para el listado de delitos
-- [ ] Implementar filtros por tipo, fecha y ubicación
-
-### 5. Pruebas
-- [ ] Configurar el entorno de pruebas
-- [ ] Implementar pruebas unitarias para:
-  - [ ] Casos de uso
-  - [ ] Repositorios
-  - [ ] Controladores
-- [ ] Implementar pruebas de integración
-- [ ] Configurar cobertura de código
-- [ ] Implementar pruebas de carga
-
-### 6. Documentación
-- [ ] Documentar la API con Swagger/OpenAPI
-- [ ] Crear guía de instalación y configuración
-- [ ] Documentar la estructura del proyecto
-- [ ] Agregar ejemplos de uso
-- [ ] Crear guía de contribución
-
-### 7. Seguridad
-- [ ] Implementar autenticación
-- [ ] Implementar autorización
-- [ ] Agregar rate limiting
+### 5.2 Seguridad
+- [ ] Implementar autenticación JWT
+- [ ] Implementar autorización basada en roles
+- [ ] Implementar rate limiting
 - [ ] Implementar CORS
-- [ ] Agregar validación de tokens JWT
-- [ ] Implementar logging seguro
+- [ ] Implementar validación de entrada
+- [ ] Implementar sanitización de datos
+- [ ] Implementar headers de seguridad
+- [ ] Implementar protección contra ataques comunes
 
-### 8. Monitoreo y Logging
-- [ ] Implementar sistema de logging estructurado
-- [ ] Agregar métricas de la aplicación
-- [ ] Configurar alertas
-- [ ] Implementar tracing distribuido
+### 5.3 Logging y Monitoreo
+- [ ] Implementar logging estructurado
+- [ ] Implementar métricas de aplicación
+- [ ] Implementar trazabilidad distribuida
+- [ ] Implementar alertas
+- [ ] Implementar dashboard de monitoreo
 
-## Próximos Pasos Sugeridos
-1. Implementar la generación de IDs únicos
-2. Configurar y probar la base de datos
-3. Implementar el repositorio concreto
-4. Agregar validaciones de negocio
-5. Implementar los endpoints faltantes
-6. Configurar el entorno de pruebas
+## 6. Testing
+- [x] Implementar pruebas unitarias
+- [ ] Implementar pruebas de integración
+- [ ] Implementar pruebas end-to-end
+- [ ] Implementar pruebas de carga
+- [ ] Implementar pruebas de seguridad
+- [ ] Implementar pruebas de API
+- [ ] Implementar mocks y stubs
+- [ ] Implementar fixtures de prueba
 
-## Consideraciones Técnicas
-- Mantener la arquitectura limpia y los principios SOLID
-- Asegurar la escalabilidad del sistema
-- Implementar manejo de errores consistente
-- Mantener la documentación actualizada
-- Seguir las mejores prácticas de Go 
+## 7. CI/CD
+- [ ] Configurar pipeline de CI
+- [ ] Configurar pipeline de CD
+- [ ] Implementar análisis estático de código
+- [ ] Implementar análisis de seguridad
+- [ ] Implementar análisis de cobertura de pruebas
+- [ ] Implementar despliegue automático
+- [ ] Implementar rollback automático
+- [ ] Implementar versionado semántico
+
+## 8. Documentación
+- [ ] Crear documentación de API
+- [ ] Crear documentación de arquitectura
+- [ ] Crear documentación de despliegue
+- [ ] Crear documentación de desarrollo
+- [ ] Crear documentación de operación
+- [ ] Crear guías de contribución
+- [ ] Crear guías de estilo de código
+- [ ] Crear guías de testing
+
+## 9. Optimización
+- [ ] Implementar caché
+- [ ] Optimizar consultas de base de datos
+- [ ] Implementar paginación
+- [ ] Implementar compresión de respuesta
+- [ ] Optimizar tamaño de payload
+- [ ] Implementar lazy loading
+- [ ] Optimizar imágenes y assets
+- [ ] Implementar CDN
+
+## 10. Internacionalización
+- [ ] Implementar soporte multiidioma
+- [ ] Implementar formatos de fecha y hora locales
+- [ ] Implementar formatos de números locales
+- [ ] Implementar formatos de moneda locales
+- [ ] Implementar formatos de dirección locales
+- [ ] Implementar formatos de teléfono locales
+- [ ] Implementar formatos de documento locales
+- [ ] Implementar formatos de nombre locales 
