@@ -68,13 +68,14 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 		{
 			name: "creación exitosa de delito",
 			input: usecases.CreateCrimeInput{
-				Type:        "robo",
+				Type:        "ROBO",
 				Description: "Robo a mano armada",
 				Location:    validLocation,
 				Date:        time.Now().Add(-1 * time.Hour),
 			},
 			setupMock: func() {
 				mockRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.Crime")).Return(nil)
+				mockRepo.On("GetAll", mock.Anything).Return([]*entities.Crime{}, nil)
 			},
 		},
 		{
@@ -85,12 +86,12 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 				Location:    validLocation,
 				Date:        time.Now().Add(-1 * time.Hour),
 			},
-			expectedError: "el tipo de delito es requerido",
+			expectedError: "el tipo de delito es inválido",
 		},
 		{
 			name: "error - descripción vacía",
 			input: usecases.CreateCrimeInput{
-				Type:        "robo",
+				Type:        "ROBO",
 				Description: "",
 				Location:    validLocation,
 				Date:        time.Now().Add(-1 * time.Hour),
@@ -100,7 +101,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 		{
 			name: "error - fecha futura",
 			input: usecases.CreateCrimeInput{
-				Type:        "robo",
+				Type:        "ROBO",
 				Description: "Robo a mano armada",
 				Location:    validLocation,
 				Date:        time.Now().Add(24 * time.Hour),
@@ -110,7 +111,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 		{
 			name: "error - latitud inválida",
 			input: usecases.CreateCrimeInput{
-				Type:        "robo",
+				Type:        "ROBO",
 				Description: "Robo a mano armada",
 				Location: usecases.Location{
 					Latitude:  91.0, // Latitud inválida
@@ -124,7 +125,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 		{
 			name: "error - longitud inválida",
 			input: usecases.CreateCrimeInput{
-				Type:        "robo",
+				Type:        "ROBO",
 				Description: "Robo a mano armada",
 				Location: usecases.Location{
 					Latitude:  -34.603722,
@@ -138,13 +139,14 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 		{
 			name: "error - fallo en el repositorio",
 			input: usecases.CreateCrimeInput{
-				Type:        "robo",
+				Type:        "ROBO",
 				Description: "Robo a mano armada",
 				Location:    validLocation,
 				Date:        time.Now().Add(-1 * time.Hour),
 			},
-			expectedError: "error al guardar en el repositorio",
+			expectedError: "assert.AnError general error for testing",
 			setupMock: func() {
+				mockRepo.On("GetAll", mock.Anything).Return([]*entities.Crime{}, nil)
 				mockRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.Crime")).Return(assert.AnError)
 			},
 		},
@@ -158,6 +160,10 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 			// Configurar el mock si es necesario
 			if tt.setupMock != nil {
 				tt.setupMock()
+			} else if tt.expectedError == "" {
+				// Si no hay error esperado y no hay setup específico, configurar el mock por defecto
+				mockRepo.On("GetAll", mock.Anything).Return([]*entities.Crime{}, nil)
+				mockRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.Crime")).Return(nil)
 			}
 
 			// Ejecutar el caso de uso

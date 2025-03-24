@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -57,7 +58,26 @@ func (c *CrimeController) Create(ctx *gin.Context) {
 
 	crime, err := c.createCrimeUseCase.Execute(ctx.Request.Context(), input)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		var statusCode int
+		switch {
+		case errors.Is(err, usecases.ErrInvalidType):
+			statusCode = http.StatusBadRequest
+		case errors.Is(err, usecases.ErrEmptyDescription):
+			statusCode = http.StatusBadRequest
+		case errors.Is(err, usecases.ErrDescriptionTooLong):
+			statusCode = http.StatusBadRequest
+		case errors.Is(err, usecases.ErrFutureDate):
+			statusCode = http.StatusBadRequest
+		case errors.Is(err, usecases.ErrInvalidLatitude):
+			statusCode = http.StatusBadRequest
+		case errors.Is(err, usecases.ErrInvalidLongitude):
+			statusCode = http.StatusBadRequest
+		case errors.Is(err, usecases.ErrDuplicateCrime):
+			statusCode = http.StatusConflict
+		default:
+			statusCode = http.StatusInternalServerError
+		}
+		ctx.JSON(statusCode, gin.H{"error": err.Error()})
 		return
 	}
 
