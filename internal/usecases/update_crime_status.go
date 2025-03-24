@@ -2,62 +2,71 @@ package usecases
 
 import (
 	"context"
-
-	"go-crime_map_backend/internal/domain/entities"
+	"errors"
 	"go-crime_map_backend/internal/domain/repositories"
+	"time"
 )
 
 // UpdateCrimeStatusInput representa los datos necesarios para actualizar el estado
 type UpdateCrimeStatusInput struct {
-	CrimeID   string
-	NewStatus entities.CrimeStatus
+	ID        string
+	NewStatus string
 }
 
 // UpdateCrimeStatusUseCase maneja la lógica de negocio para actualizar el estado de un delito
 type UpdateCrimeStatusUseCase struct {
-	repo repositories.CrimeRepository
+	crimeRepo repositories.CrimeRepository
 }
 
 // NewUpdateCrimeStatusUseCase crea una nueva instancia del caso de uso
 func NewUpdateCrimeStatusUseCase(repo repositories.CrimeRepository) *UpdateCrimeStatusUseCase {
 	return &UpdateCrimeStatusUseCase{
-		repo: repo,
+		crimeRepo: repo,
 	}
 }
 
 // Execute ejecuta el caso de uso para actualizar el estado de un delito
 func (uc *UpdateCrimeStatusUseCase) Execute(ctx context.Context, input UpdateCrimeStatusInput) error {
-	// Obtener el delito
-	crime, err := uc.repo.GetByID(ctx, input.CrimeID)
+	crime, err := uc.crimeRepo.GetByID(ctx, input.ID)
 	if err != nil {
 		return err
 	}
 
-	// Verificar si el delito ya está eliminado
-	if crime.Status == entities.CrimeStatusDeleted {
-		return ErrCrimeAlreadyDeleted
+	if crime == nil {
+		return errors.New("delito no encontrado")
 	}
 
-	// Validar la transición de estado
+	if crime.DeletedAt != nil {
+		return errors.New("no se puede actualizar un delito eliminado")
+	}
+
 	if !isValidStatusTransition(crime.Status, input.NewStatus) {
-		return ErrInvalidStatusTransition
+		return errors.New("transición de estado no válida")
 	}
 
-	// Actualizar el estado
 	crime.Status = input.NewStatus
-	return uc.repo.Update(ctx, crime)
+	crime.UpdatedAt = time.Now()
+
+	return uc.crimeRepo.Update(ctx, crime)
 }
 
 // isValidStatusTransition valida si la transición de estado es válida
-func isValidStatusTransition(current, new entities.CrimeStatus) bool {
-	switch current {
-	case entities.CrimeStatusActive:
-		return new == entities.CrimeStatusInactive || new == entities.CrimeStatusDeleted
-	case entities.CrimeStatusInactive:
-		return new == entities.CrimeStatusActive || new == entities.CrimeStatusDeleted
-	case entities.CrimeStatusDeleted:
-		return false
-	default:
+func isValidStatusTransition(currentStatus, newStatus string) bool {
+	validTransitions := map[string][]string{
+		"active":   {"inactive"},
+		"inactive": {"active"},
+	}
+
+	allowedStatuses, exists := validTransitions[currentStatus]
+	if !exists {
 		return false
 	}
+
+	for _, status := range allowedStatuses {
+		if status == newStatus {
+			return true
+		}
+	}
+
+	return false
 }

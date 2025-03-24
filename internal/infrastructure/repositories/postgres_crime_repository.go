@@ -3,10 +3,12 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"go-crime_map_backend/internal/domain/entities"
-	"go-crime_map_backend/internal/domain/repositories"
 )
 
 // PostgresCrimeRepository implementa el repositorio de delitos usando PostgreSQL
@@ -23,59 +25,63 @@ func NewPostgresCrimeRepository(db *sql.DB) *PostgresCrimeRepository {
 
 // Create crea un nuevo delito
 func (r *PostgresCrimeRepository) Create(ctx context.Context, crime *entities.Crime) error {
-	// Convertir fechas a UTC
-	now := time.Now().UTC()
-	crime.CreatedAt = now
-	crime.UpdatedAt = now
-	crime.Date = crime.Date.UTC()
+	query := `
+		INSERT INTO crimes (id, title, description, crime_type, status, latitude, longitude, address, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	`
 
-	// Primero insertar la ubicación
-	var locationID int
-	err := r.db.QueryRowContext(ctx, `
-		INSERT INTO locations (latitude, longitude, address, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id
-	`, crime.Location.Latitude, crime.Location.Longitude, crime.Location.Address, now, now).Scan(&locationID)
+	_, err := r.db.ExecContext(ctx, query,
+		crime.ID,
+		crime.Title,
+		crime.Description,
+		crime.Type,
+		crime.Status,
+		crime.Location.Latitude,
+		crime.Location.Longitude,
+		crime.Location.Address,
+		crime.CreatedAt,
+		crime.UpdatedAt,
+	)
+
 	if err != nil {
-		return err
+		return fmt.Errorf("error al crear delito: %w", err)
 	}
 
-	// Luego insertar el delito
-	_, err = r.db.ExecContext(ctx, `
-		INSERT INTO crimes (id, type, description, location_id, date, status, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-	`, crime.ID, crime.Type, crime.Description, locationID, crime.Date, crime.Status, now, now)
-	return err
+	return nil
 }
 
 // GetByID obtiene un delito por su ID
 func (r *PostgresCrimeRepository) GetByID(ctx context.Context, id string) (*entities.Crime, error) {
-	var crime entities.Crime
-	var locationID int
-	err := r.db.QueryRowContext(ctx, `
-		SELECT c.id, c.type, c.description, c.date, c.status, c.created_at, c.updated_at,
-			   l.id, l.latitude, l.longitude, l.address
-		FROM crimes c
-		JOIN locations l ON c.location_id = l.id
-		WHERE c.id = $1
-	`, id).Scan(
-		&crime.ID, &crime.Type, &crime.Description, &crime.Date, &crime.Status,
-		&crime.CreatedAt, &crime.UpdatedAt,
-		&locationID, &crime.Location.Latitude, &crime.Location.Longitude, &crime.Location.Address,
+	query := `
+		SELECT id, title, description, crime_type, status, latitude, longitude, address, created_at, updated_at, deleted_at
+		FROM crimes
+		WHERE id = $1 AND deleted_at IS NULL
+	`
+
+	crime := &entities.Crime{}
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
+		&crime.ID,
+		&crime.Title,
+		&crime.Description,
+		&crime.Type,
+		&crime.Status,
+		&crime.Location.Latitude,
+		&crime.Location.Longitude,
+		&crime.Location.Address,
+		&crime.CreatedAt,
+		&crime.UpdatedAt,
+		&crime.DeletedAt,
 	)
+
 	if err == sql.ErrNoRows {
-		return nil, repositories.ErrNotFound
+		return nil, nil
 	}
+
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error al obtener delito: %w", err)
 	}
 
-	// Convertir fechas a UTC
-	crime.Date = crime.Date.UTC()
-	crime.CreatedAt = crime.CreatedAt.UTC()
-	crime.UpdatedAt = crime.UpdatedAt.UTC()
-
-	return &crime, nil
+	return crime, nil
 }
 
 // GetAll obtiene todos los delitos
@@ -94,11 +100,10 @@ func (r *PostgresCrimeRepository) GetAll(ctx context.Context) ([]*entities.Crime
 	var crimes []*entities.Crime
 	for rows.Next() {
 		var crime entities.Crime
-		var locationID int
 		err := rows.Scan(
-			&crime.ID, &crime.Type, &crime.Description, &crime.Date, &crime.Status,
+			&crime.ID, &crime.Type, &crime.Description, &crime.Status,
 			&crime.CreatedAt, &crime.UpdatedAt,
-			&locationID, &crime.Location.Latitude, &crime.Location.Longitude, &crime.Location.Address,
+			&crime.Location.Latitude, &crime.Location.Longitude, &crime.Location.Address,
 		)
 		if err != nil {
 			return nil, err
@@ -110,97 +115,240 @@ func (r *PostgresCrimeRepository) GetAll(ctx context.Context) ([]*entities.Crime
 
 // Update actualiza un delito existente
 func (r *PostgresCrimeRepository) Update(ctx context.Context, crime *entities.Crime) error {
-	// Primero actualizar la ubicación
-	_, err := r.db.ExecContext(ctx, `
-		UPDATE locations l
-		SET latitude = $1, longitude = $2, address = $3
-		FROM crimes c
-		WHERE c.location_id = l.id AND c.id = $4
-	`, crime.Location.Latitude, crime.Location.Longitude, crime.Location.Address, crime.ID)
+	query := `
+		UPDATE crimes
+		SET title = $1, description = $2, crime_type = $3, status = $4,
+			latitude = $5, longitude = $6, address = $7, updated_at = $8,
+			deleted_at = $9
+		WHERE id = $10
+	`
+
+	result, err := r.db.ExecContext(ctx, query,
+		crime.Title,
+		crime.Description,
+		crime.Type,
+		crime.Status,
+		crime.Location.Latitude,
+		crime.Location.Longitude,
+		crime.Location.Address,
+		crime.UpdatedAt,
+		crime.DeletedAt,
+		crime.ID,
+	)
+
 	if err != nil {
-		return err
+		return fmt.Errorf("error al actualizar delito: %w", err)
 	}
 
-	// Luego actualizar el delito
-	_, err = r.db.ExecContext(ctx, `
-		UPDATE crimes
-		SET type = $1, description = $2, date = $3, status = $4
-		WHERE id = $5
-	`, crime.Type, crime.Description, crime.Date, crime.Status, crime.ID)
-	return err
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error al obtener filas afectadas: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("delito no encontrado")
+	}
+
+	return nil
 }
 
 // Delete elimina un delito por su ID
 func (r *PostgresCrimeRepository) Delete(ctx context.Context, id string) error {
-	// La eliminación en cascada se maneja en la base de datos
-	_, err := r.db.ExecContext(ctx, "DELETE FROM crimes WHERE id = $1", id)
-	return err
+	now := time.Now()
+	query := `
+		UPDATE crimes
+		SET status = 'deleted', deleted_at = $1, updated_at = $1
+		WHERE id = $2 AND deleted_at IS NULL
+	`
+
+	result, err := r.db.ExecContext(ctx, query, now, id)
+	if err != nil {
+		return fmt.Errorf("error al eliminar delito: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error al obtener filas afectadas: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("delito no encontrado")
+	}
+
+	return nil
 }
 
 // List obtiene una lista de delitos con los filtros especificados
-func (r *PostgresCrimeRepository) List(ctx context.Context, filter repositories.ListCrimesFilter) ([]*entities.Crime, error) {
+func (r *PostgresCrimeRepository) List(ctx context.Context, page, limit int, startDate, endDate *time.Time, crimeType, status *string) ([]entities.Crime, int64, error) {
+	offset := (page - 1) * limit
+
+	// Construir la consulta base
 	query := `
-		SELECT c.id, c.type, c.description, c.date, c.status, c.created_at, c.updated_at,
-			   l.id, l.latitude, l.longitude, l.address
+		SELECT c.id, c.title, c.description, c.crime_type, c.status, 
+		       c.created_at, c.updated_at, c.deleted_at,
+		       c.latitude, c.longitude, c.address
 		FROM crimes c
-		JOIN locations l ON c.location_id = l.id
-		WHERE 1=1
+		WHERE c.deleted_at IS NULL
 	`
-	args := []interface{}{}
+	countQuery := `SELECT COUNT(*) FROM crimes WHERE deleted_at IS NULL`
+
+	// Agregar condiciones de filtro
+	var conditions []string
+	var args []interface{}
 	argCount := 1
 
-	if filter.Type != "" {
-		query += ` AND c.type = $` + string(rune('0'+argCount))
-		args = append(args, filter.Type)
+	if startDate != nil {
+		conditions = append(conditions, fmt.Sprintf("created_at >= $%d", argCount))
+		args = append(args, startDate)
 		argCount++
 	}
 
-	if filter.Status != "" {
-		query += ` AND c.status = $` + string(rune('0'+argCount))
-		args = append(args, filter.Status)
+	if endDate != nil {
+		conditions = append(conditions, fmt.Sprintf("created_at <= $%d", argCount))
+		args = append(args, endDate)
 		argCount++
 	}
 
-	if !filter.StartDate.IsZero() {
-		query += ` AND c.date >= $` + string(rune('0'+argCount))
-		args = append(args, filter.StartDate)
+	if crimeType != nil {
+		conditions = append(conditions, fmt.Sprintf("crime_type = $%d", argCount))
+		args = append(args, *crimeType)
 		argCount++
 	}
 
-	if !filter.EndDate.IsZero() {
-		query += ` AND c.date <= $` + string(rune('0'+argCount))
-		args = append(args, filter.EndDate)
+	if status != nil {
+		conditions = append(conditions, fmt.Sprintf("status = $%d", argCount))
+		args = append(args, *status)
 		argCount++
 	}
 
-	if filter.Latitude != 0 && filter.Longitude != 0 && filter.Radius > 0 {
-		query += ` AND earth_distance(ll_to_earth(l.latitude, l.longitude), ll_to_earth($` + string(rune('0'+argCount)) + `, $` + string(rune('0'+argCount+1)) + `)) <= $` + string(rune('0'+argCount+2))
-		args = append(args, filter.Latitude, filter.Longitude, filter.Radius*1000) // Convertir km a metros
-		argCount += 3
+	// Agregar condiciones a las consultas
+	if len(conditions) > 0 {
+		whereClause := " AND " + strings.Join(conditions, " AND ")
+		query += whereClause
+		countQuery += whereClause
 	}
 
-	query += ` ORDER BY c.created_at DESC LIMIT $` + string(rune('0'+argCount)) + ` OFFSET $` + string(rune('0'+argCount+1))
-	args = append(args, filter.Limit, filter.Offset)
+	// Agregar ordenamiento y paginación
+	query += ` ORDER BY created_at DESC LIMIT $` + strconv.Itoa(argCount) + ` OFFSET $` + strconv.Itoa(argCount+1)
+	args = append(args, limit, offset)
 
+	// Ejecutar consulta de conteo
+	var total int64
+	err := r.db.QueryRowContext(ctx, countQuery, args[:len(args)-2]...).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("error al contar delitos: %w", err)
+	}
+
+	// Ejecutar consulta principal
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, 0, fmt.Errorf("error al listar delitos: %w", err)
 	}
 	defer rows.Close()
 
-	var crimes []*entities.Crime
+	var crimes []entities.Crime
 	for rows.Next() {
 		var crime entities.Crime
-		var locationID int
 		err := rows.Scan(
-			&crime.ID, &crime.Type, &crime.Description, &crime.Date, &crime.Status,
+			&crime.ID, &crime.Title, &crime.Description, &crime.Type, &crime.Status,
 			&crime.CreatedAt, &crime.UpdatedAt,
-			&locationID, &crime.Location.Latitude, &crime.Location.Longitude, &crime.Location.Address,
+			&crime.DeletedAt,
+			&crime.Location.Latitude, &crime.Location.Longitude, &crime.Location.Address,
 		)
 		if err != nil {
-			return nil, err
+			return nil, 0, fmt.Errorf("error al escanear delito: %w", err)
 		}
-		crimes = append(crimes, &crime)
+		crimes = append(crimes, crime)
 	}
-	return crimes, nil
+
+	if err = rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("error al iterar delitos: %w", err)
+	}
+
+	return crimes, total, nil
+}
+
+// GetStats obtiene estadísticas sobre los delitos
+func (r *PostgresCrimeRepository) GetStats(ctx context.Context) (*entities.CrimeStats, error) {
+	// Obtener estadísticas básicas
+	var stats entities.CrimeStats
+	err := r.db.QueryRowContext(ctx, `
+		SELECT 
+			COUNT(*) as total_crimes,
+			COUNT(CASE WHEN status = 'active' THEN 1 END) as active_crimes,
+			COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive_crimes
+		FROM crimes
+		WHERE deleted_at IS NULL
+	`).Scan(&stats.TotalCrimes, &stats.ActiveCrimes, &stats.InactiveCrimes)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener estadísticas básicas: %w", err)
+	}
+
+	// Obtener delitos por tipo
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT crime_type, COUNT(*) as count
+		FROM crimes
+		WHERE deleted_at IS NULL
+		GROUP BY crime_type
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener estadísticas por tipo: %w", err)
+	}
+	defer rows.Close()
+
+	stats.CrimesByType = make(map[string]int64)
+	for rows.Next() {
+		var crimeType string
+		var count int64
+		if err := rows.Scan(&crimeType, &count); err != nil {
+			return nil, fmt.Errorf("error al escanear estadísticas por tipo: %w", err)
+		}
+		stats.CrimesByType[crimeType] = count
+	}
+
+	// Obtener delitos por estado
+	rows, err = r.db.QueryContext(ctx, `
+		SELECT status, COUNT(*) as count
+		FROM crimes
+		WHERE deleted_at IS NULL
+		GROUP BY status
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener estadísticas por estado: %w", err)
+	}
+	defer rows.Close()
+
+	stats.CrimesByStatus = make(map[string]int64)
+	for rows.Next() {
+		var status string
+		var count int64
+		if err := rows.Scan(&status, &count); err != nil {
+			return nil, fmt.Errorf("error al escanear estadísticas por estado: %w", err)
+		}
+		stats.CrimesByStatus[status] = count
+	}
+
+	// Obtener delitos por ubicación
+	rows, err = r.db.QueryContext(ctx, `
+		SELECT address, COUNT(*) as count
+		FROM crimes
+		WHERE deleted_at IS NULL
+		GROUP BY address
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener estadísticas por ubicación: %w", err)
+	}
+	defer rows.Close()
+
+	stats.CrimesByLocation = make(map[string]int64)
+	for rows.Next() {
+		var address string
+		var count int64
+		if err := rows.Scan(&address, &count); err != nil {
+			return nil, fmt.Errorf("error al escanear estadísticas por ubicación: %w", err)
+		}
+		stats.CrimesByLocation[address] = count
+	}
+
+	return &stats, nil
 }

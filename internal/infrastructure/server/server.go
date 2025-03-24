@@ -6,7 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	crimeHttp "go-crime_map_backend/internal/interfaces/http"
+	"go-crime_map_backend/internal/infrastructure/database"
+	"go-crime_map_backend/internal/infrastructure/repositories"
+	"go-crime_map_backend/internal/interface/controllers"
+	"go-crime_map_backend/internal/interface/routes"
 	"go-crime_map_backend/internal/usecases"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +21,9 @@ type Server struct {
 }
 
 func NewServer() *Server {
+	// Configurar modo de Gin
+	gin.SetMode(gin.DebugMode)
+
 	router := gin.Default()
 
 	// Configurar middleware básico
@@ -31,16 +37,41 @@ func NewServer() *Server {
 		})
 	})
 
-	// TODO: Inicializar el repositorio y el caso de uso
-	// Por ahora usamos nil como placeholder
-	createCrimeUseCase := usecases.NewCreateCrimeUseCase(nil)
-	crimeController := crimeHttp.NewCrimeController(createCrimeUseCase)
+	// Inicializar la base de datos
+	db, err := database.NewPostgresDB()
+	if err != nil {
+		panic(fmt.Sprintf("Error al conectar con la base de datos: %v", err))
+	}
+
+	// Inicializar el repositorio
+	crimeRepo := repositories.NewPostgresCrimeRepository(db)
+
+	// Inicializar los casos de uso
+	createCrimeUseCase := usecases.NewCreateCrimeUseCase(crimeRepo)
+	listCrimesUseCase := usecases.NewListCrimesUseCase(crimeRepo)
+	updateStatusUseCase := usecases.NewUpdateCrimeStatusUseCase(crimeRepo)
+	deleteCrimeUseCase := usecases.NewDeleteCrimeUseCase(crimeRepo)
+	getStatsUseCase := usecases.NewGetCrimeStatsUseCase(crimeRepo)
+	getCrimeUseCase := usecases.NewGetCrimeUseCase(crimeRepo)
+
+	crimeController := controllers.NewCrimeController(
+		createCrimeUseCase,
+		listCrimesUseCase,
+		updateStatusUseCase,
+		deleteCrimeUseCase,
+		getStatsUseCase,
+		getCrimeUseCase,
+	)
 
 	// Configurar rutas de delitos
-	crimes := router.Group("/api/v1/crimes")
-	{
-		crimes.POST("/", crimeController.Create)
+	routes.SetupCrimeRoutes(router, crimeController)
+
+	// Imprimir rutas registradas
+	fmt.Println("\nRutas registradas:")
+	for _, route := range router.Routes() {
+		fmt.Printf("%s %s\n", route.Method, route.Path)
 	}
+	fmt.Println()
 
 	return &Server{
 		router: router,

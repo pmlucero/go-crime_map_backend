@@ -13,17 +13,10 @@ import (
 
 // CreateCrimeInput representa los datos necesarios para crear un delito
 type CreateCrimeInput struct {
-	Type        string    `json:"type"`
-	Description string    `json:"description"`
-	Location    Location  `json:"location"`
-	Date        time.Time `json:"date"`
-}
-
-// Location representa la ubicación del delito
-type Location struct {
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
-	Address   string  `json:"address"`
+	Title       string
+	Description string
+	Type        string
+	Location    entities.Location
 }
 
 // CreateCrimeUseCase maneja la lógica de negocio para crear un nuevo delito
@@ -40,10 +33,7 @@ func NewCreateCrimeUseCase(repo repositories.CrimeRepository) *CreateCrimeUseCas
 
 // Execute ejecuta el caso de uso para crear un nuevo delito
 func (uc *CreateCrimeUseCase) Execute(ctx context.Context, input CreateCrimeInput) (*entities.Crime, error) {
-	// Validar que la fecha no sea futura
-	if input.Date.After(time.Now()) {
-		return nil, errors.New("la fecha del delito no puede ser futura")
-	}
+	now := time.Now().UTC()
 
 	// Validar que el tipo de delito no esté vacío
 	if input.Type == "" {
@@ -55,28 +45,16 @@ func (uc *CreateCrimeUseCase) Execute(ctx context.Context, input CreateCrimeInpu
 		return nil, errors.New("la descripción es requerida")
 	}
 
-	// Validar que la ubicación sea válida
-	if input.Location.Latitude < -90 || input.Location.Latitude > 90 {
-		return nil, errors.New("latitud inválida")
-	}
-	if input.Location.Longitude < -180 || input.Location.Longitude > 180 {
-		return nil, errors.New("longitud inválida")
-	}
-
 	// Crear la entidad Crime
 	crime := &entities.Crime{
-		ID:          generateID(),
-		Type:        input.Type,
+		ID:          uuid.New().String(),
+		Title:       input.Title,
 		Description: input.Description,
-		Location: entities.Location{
-			Latitude:  input.Location.Latitude,
-			Longitude: input.Location.Longitude,
-			Address:   input.Location.Address,
-		},
-		Date:      input.Date,
-		Status:    entities.CrimeStatusActive,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		Type:        input.Type,
+		Status:      "ACTIVE",
+		Location:    input.Location,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 
 	// Guardar en el repositorio
@@ -85,9 +63,4 @@ func (uc *CreateCrimeUseCase) Execute(ctx context.Context, input CreateCrimeInpu
 	}
 
 	return crime, nil
-}
-
-// generateID genera un ID único para el delito
-func generateID() string {
-	return uuid.New().String()
 }

@@ -14,62 +14,79 @@ type ListCrimesInput struct {
 	Status    string    // Estado del delito
 	StartDate time.Time // Fecha inicial
 	EndDate   time.Time // Fecha final
-	Latitude  float64   // Latitud del centro
-	Longitude float64   // Longitud del centro
-	Radius    float64   // Radio en kilómetros
-	Limit     int       // Límite de resultados
+	Limit     int       // Límite de resultados por página
 	Offset    int       // Desplazamiento para paginación
+}
+
+// ListCrimesOutput representa el resultado de listar delitos
+type ListCrimesOutput struct {
+	Crimes     []entities.Crime // Lista de delitos
+	TotalCount int64            // Total de delitos que coinciden con los filtros
+	Page       int              // Página actual
+	TotalPages int              // Total de páginas
 }
 
 // ListCrimesUseCase maneja la lógica de negocio para listar delitos
 type ListCrimesUseCase struct {
-	crimeRepo repositories.CrimeRepository
+	crimeRepository repositories.CrimeRepository
+}
+
+// ListCrimesParams representa los parámetros para listar delitos
+type ListCrimesParams struct {
+	Page      int
+	Limit     int
+	StartDate *time.Time
+	EndDate   *time.Time
+	Type      *string
+	Status    *string
 }
 
 // NewListCrimesUseCase crea una nueva instancia del caso de uso
 func NewListCrimesUseCase(repo repositories.CrimeRepository) *ListCrimesUseCase {
 	return &ListCrimesUseCase{
-		crimeRepo: repo,
+		crimeRepository: repo,
 	}
 }
 
 // Execute ejecuta el caso de uso para listar delitos
-func (uc *ListCrimesUseCase) Execute(ctx context.Context, input ListCrimesInput) ([]*entities.Crime, error) {
-	// Validar que las fechas sean coherentes
-	if !input.StartDate.IsZero() && !input.EndDate.IsZero() && input.StartDate.After(input.EndDate) {
-		return nil, ErrInvalidDateRange
+func (uc *ListCrimesUseCase) Execute(ctx context.Context, params ListCrimesParams) (*entities.CrimeList, error) {
+	// Ajustar las fechas para incluir todo el día
+	var startDate, endDate *time.Time
+	if params.StartDate != nil {
+		start := time.Date(params.StartDate.Year(), params.StartDate.Month(), params.StartDate.Day(), 0, 0, 0, 0, params.StartDate.Location())
+		startDate = &start
+	}
+	if params.EndDate != nil {
+		end := time.Date(params.EndDate.Year(), params.EndDate.Month(), params.EndDate.Day(), 23, 59, 59, 999999999, params.EndDate.Location())
+		endDate = &end
 	}
 
-	// Validar que el radio sea positivo si se especifican coordenadas
-	if (input.Latitude != 0 || input.Longitude != 0) && input.Radius <= 0 {
-		return nil, ErrInvalidRadius
+	// Validar y ajustar parámetros de paginación
+	if params.Page < 1 {
+		params.Page = 1
+	}
+	if params.Limit < 1 {
+		params.Limit = 10
+	}
+	if params.Limit > 100 {
+		params.Limit = 100
 	}
 
-	// Validar que el límite sea positivo
-	if input.Limit <= 0 {
-		input.Limit = 10 // Valor por defecto
-	}
-
-	// Validar que el offset sea no negativo
-	if input.Offset < 0 {
-		input.Offset = 0
-	}
-
-	// Listar delitos con los filtros especificados
-	crimes, err := uc.crimeRepo.List(ctx, repositories.ListCrimesFilter{
-		Type:      input.Type,
-		Status:    input.Status,
-		StartDate: input.StartDate,
-		EndDate:   input.EndDate,
-		Latitude:  input.Latitude,
-		Longitude: input.Longitude,
-		Radius:    input.Radius,
-		Limit:     input.Limit,
-		Offset:    input.Offset,
-	})
+	// Obtener delitos del repositorio
+	crimes, total, err := uc.crimeRepository.List(ctx, params.Page, params.Limit, startDate, endDate, params.Type, params.Status)
 	if err != nil {
 		return nil, err
 	}
 
-	return crimes, nil
+	// Calcular total de páginas
+	totalPages := (total + int64(params.Limit) - 1) / int64(params.Limit)
+
+	return &entities.CrimeList{
+		Crimes:      crimes,
+		Total:       total,
+		Page:        params.Page,
+		Limit:       params.Limit,
+		TotalPages:  int(totalPages),
+		HasNextPage: params.Page < int(totalPages),
+	}, nil
 }

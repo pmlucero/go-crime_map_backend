@@ -14,4 +14,7 @@ var (
 
 	// ErrInvalidStatusTransition indica que se intentó realizar una transición de estado inválida
 	ErrInvalidStatusTransition = errors.New("la transición de estado no es válida")
+
+	// ErrCrimeNotFound indica que el delito no fue encontrado
+	ErrCrimeNotFound = errors.New("el delito no existe")
 )

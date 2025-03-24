@@ -39,52 +39,11 @@ func NewGetCrimeStatsUseCase(repo repositories.CrimeRepository) *GetCrimeStatsUs
 }
 
 // Execute ejecuta el caso de uso para obtener estadísticas
-func (uc *GetCrimeStatsUseCase) Execute(ctx context.Context, input GetCrimeStatsInput) (*CrimeStats, error) {
-	// Validar que las fechas sean coherentes
-	if !input.StartDate.IsZero() && !input.EndDate.IsZero() && input.StartDate.After(input.EndDate) {
-		return nil, ErrInvalidDateRange
-	}
-
-	// Validar que el límite sea positivo
-	if input.Limit <= 0 {
-		input.Limit = 5 // Valor por defecto
-	}
-
-	// Obtener delitos con los filtros especificados
-	crimes, err := uc.crimeRepo.List(ctx, repositories.ListCrimesFilter{
-		StartDate: input.StartDate,
-		EndDate:   input.EndDate,
-		Limit:     input.Limit,
-		Offset:    0,
-	})
+func (uc *GetCrimeStatsUseCase) Execute(ctx context.Context) (*entities.CrimeStats, error) {
+	stats, err := uc.crimeRepo.GetStats(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	// Calcular estadísticas
-	stats := &CrimeStats{
-		TotalCrimes:    len(crimes),
-		CrimesByType:   make(map[string]int),
-		CrimesByStatus: make(map[entities.CrimeStatus]int),
-		CrimesByMonth:  make(map[string]int),
-		RecentCrimes:   crimes,
-	}
-
-	// Procesar estadísticas
-	for _, crime := range crimes {
-		// Contar por tipo
-		stats.CrimesByType[crime.Type]++
-
-		// Contar por estado
-		stats.CrimesByStatus[crime.Status]++
-
-		// Contar por mes
-		monthKey := crime.CreatedAt.Format("2006-01")
-		stats.CrimesByMonth[monthKey]++
-	}
-
-	// Obtener tipos más comunes
-	stats.MostCommonTypes = getMostCommonTypes(stats.CrimesByType)
 
 	return stats, nil
 }
