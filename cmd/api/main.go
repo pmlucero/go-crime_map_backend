@@ -3,30 +3,37 @@ package main
 import (
 	"log"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"go-crime_map_backend/internal/infrastructure/server"
+
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 func main() {
-	// Inicializar el servidor
-	srv := server.NewServer()
-	
-	// Iniciar el servidor en una goroutine
-	go func() {
-		if err := srv.Start(); err != nil {
-			log.Fatalf("Error al iniciar el servidor: %v", err)
-		}
-	}()
-
-	// Esperar señal de interrupción
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-
-	// Cerrar el servidor de manera elegante
-	if err := srv.Shutdown(); err != nil {
-		log.Fatalf("Error al cerrar el servidor: %v", err)
+	// Obtener variables de entorno
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://postgres:postgres@localhost:5432/crime_map?sslmode=disable"
 	}
-} 
+
+	// Conectar a la base de datos
+	db, err := sqlx.Connect("postgres", dbURL)
+	if err != nil {
+		log.Fatalf("Error al conectar a la base de datos: %v", err)
+	}
+	defer db.Close()
+
+	// Crear servidor
+	srv := server.NewServer()
+
+	// Configurar rutas
+	if err := srv.SetupRoutes(db); err != nil {
+		log.Fatalf("Error al configurar rutas: %v", err)
+	}
+
+	// Iniciar servidor
+	if err := srv.Start(); err != nil {
+		log.Fatalf("Error al iniciar el servidor: %v", err)
+	}
+}
