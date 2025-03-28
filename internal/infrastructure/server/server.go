@@ -11,8 +11,12 @@ import (
 	"go-crime_map_backend/internal/interface/routes"
 	"go-crime_map_backend/internal/usecases"
 
+	_ "go-crime_map_backend/docs"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // Server representa el servidor HTTP
@@ -39,6 +43,9 @@ func NewServer() *Server {
 		})
 	})
 
+	// Configurar Swagger
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	return &Server{
 		router: router,
 		httpServer: &http.Server{
@@ -51,6 +58,7 @@ func NewServer() *Server {
 // Start inicia el servidor
 func (s *Server) Start() error {
 	fmt.Println("Servidor iniciado en el puerto 8080")
+	fmt.Println("Documentación Swagger disponible en: http://localhost:8080/swagger/index.html")
 	return s.httpServer.ListenAndServe()
 }
 

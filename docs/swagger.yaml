@@ -1,0 +1,341 @@
+basePath: /api/v1
+definitions:
+  controllers.CreateCrimeRequest:
+    properties:
+      address:
+        example: Av. Corrientes 1234
+        type: string
+      description:
+        example: Robo a mano armada en comercio
+        type: string
+      latitude:
+        example: -34.603722
+        type: number
+      longitude:
+        example: -58.381592
+        type: number
+      title:
+        example: Robo a mano armada
+        type: string
+      type:
+        example: ROBO
+        type: string
+    required:
+    - address
+    - description
+    - latitude
+    - longitude
+    - title
+    - type
+    type: object
+  controllers.ErrorResponse:
+    properties:
+      error:
+        example: Error message
+        type: string
+    type: object
+  controllers.ListCrimesResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/entities.Crime'
+        type: array
+      page:
+        type: integer
+      total_count:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  controllers.UpdateStatusRequest:
+    properties:
+      status:
+        example: INACTIVE
+        type: string
+    required:
+    - status
+    type: object
+  entities.Crime:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      location:
+        $ref: '#/definitions/entities.Location'
+      status:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  entities.CrimeStats:
+    properties:
+      active_crimes:
+        type: integer
+      crimes_by_address:
+        additionalProperties:
+          type: integer
+        type: object
+      crimes_by_location:
+        additionalProperties:
+          type: integer
+        type: object
+      crimes_by_status:
+        additionalProperties:
+          type: integer
+        type: object
+      crimes_by_type:
+        additionalProperties:
+          type: integer
+        type: object
+      inactive_crimes:
+        type: integer
+      last_update:
+        type: string
+      total_crimes:
+        type: integer
+    type: object
+  entities.Location:
+    properties:
+      address:
+        description: Dirección descriptiva
+        type: string
+      latitude:
+        description: Latitud
+        type: number
+      longitude:
+        description: Longitud
+        type: number
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API para el sistema de gestión de crímenes Crime Map
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Crime Map API
+  version: "1.0"
+paths:
+  /crimes:
+    get:
+      consumes:
+      - application/json
+      description: Obtiene una lista paginada de delitos con filtros opcionales
+      parameters:
+      - description: Tipo de delito
+        in: query
+        name: type
+        type: string
+      - description: Estado del delito
+        in: query
+        name: status
+        type: string
+      - description: Fecha de inicio
+        in: query
+        name: start_date
+        type: string
+      - description: Fecha de fin
+        in: query
+        name: end_date
+        type: string
+      - default: 10
+        description: Límite de resultados por página
+        in: query
+        name: limit
+        type: integer
+      - default: 1
+        description: Número de página
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.ListCrimesResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Listar delitos
+      tags:
+      - crimes
+    post:
+      consumes:
+      - application/json
+      description: Crea un nuevo registro de delito en el sistema
+      parameters:
+      - description: Datos del delito
+        in: body
+        name: crime
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CreateCrimeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.Crime'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Crear un nuevo delito
+      tags:
+      - crimes
+  /crimes/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Elimina un delito del sistema
+      parameters:
+      - description: ID del delito
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Eliminar un delito
+      tags:
+      - crimes
+    get:
+      consumes:
+      - application/json
+      description: Obtiene los detalles de un delito específico
+      parameters:
+      - description: ID del delito
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Crime'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Obtener un delito por ID
+      tags:
+      - crimes
+  /crimes/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Actualiza el estado de un delito existente
+      parameters:
+      - description: ID del delito
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Nuevo estado
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Actualizar estado de un delito
+      tags:
+      - crimes
+  /crimes/stats:
+    get:
+      consumes:
+      - application/json
+      description: Obtiene estadísticas generales sobre los delitos en el sistema
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.CrimeStats'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Obtener estadísticas de delitos
+      tags:
+      - crimes
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

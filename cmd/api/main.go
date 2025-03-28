@@ -6,10 +6,30 @@ import (
 
 	"go-crime_map_backend/internal/infrastructure/server"
 
+	_ "go-crime_map_backend/docs" // Importar la documentación de Swagger
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
+// @title           Crime Map API
+// @version         1.0
+// @description     API para el sistema de gestión de crímenes Crime Map
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.swagger.io/support
+// @contact.email  support@swagger.io
+
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      localhost:8080
+// @BasePath  /api/v1
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 func main() {
 	// Obtener variables de entorno
 	dbURL := os.Getenv("DATABASE_URL")
