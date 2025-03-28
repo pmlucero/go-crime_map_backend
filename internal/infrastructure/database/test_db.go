@@ -1,139 +1,104 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
-	"sync"
 	"testing"
 
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
-var (
-	testDB *sql.DB
-	once   sync.Once
-)
-
-// SetupTestDB configura la base de datos de test
-func SetupTestDB(t *testing.T) *sql.DB {
-	once.Do(func() {
-		// Obtener variables de entorno para la base de datos de test
-		dbHost := getEnvOrDefault("TEST_DB_HOST", "localhost")
-		dbPort := getEnvOrDefault("TEST_DB_PORT", "5432")
-		dbUser := getEnvOrDefault("TEST_DB_USER", "postgres")
-		dbPassword := getEnvOrDefault("TEST_DB_PASSWORD", "postgres")
-		dbName := getEnvOrDefault("TEST_DB_NAME", "crime_map_test")
-
-		// Construir la cadena de conexión
-		connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-			dbHost, dbPort, dbUser, dbPassword, dbName)
-
-		// Conectar a la base de datos
-		var err error
-		testDB, err = sql.Open("postgres", connStr)
-		if err != nil {
-			t.Fatalf("Error al conectar con la base de datos de test: %v", err)
-		}
-
-		// Verificar la conexión
-		if err := testDB.Ping(); err != nil {
-			t.Fatalf("Error al hacer ping a la base de datos de test: %v", err)
-		}
-	})
-
-	// Limpiar la base de datos antes de crear las tablas
-	CleanupTestDB(t)
-
-	// Habilitar las extensiones necesarias
-	_, err := testDB.Exec(`
-		CREATE EXTENSION IF NOT EXISTS cube;
-		CREATE EXTENSION IF NOT EXISTS earthdistance;
-	`)
-	if err != nil {
-		t.Fatalf("Error al habilitar las extensiones: %v", err)
+// SetupTestDB configura una base de datos de prueba
+func SetupTestDB(t *testing.T) *sqlx.DB {
+	// Obtener variables de entorno
+	dbURL := os.Getenv("TEST_DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://postgres:postgres@localhost:5432/crime_map_test?sslmode=disable"
 	}
 
-	// Crear las tablas necesarias
-	_, err = testDB.Exec(`
-		CREATE TABLE IF NOT EXISTS locations (
-			id SERIAL PRIMARY KEY,
+	// Conectar a la base de datos
+	db, err := sqlx.Connect("postgres", dbURL)
+	if err != nil {
+		t.Fatalf("Error al conectar a la base de datos de prueba: %v", err)
+	}
+
+	// Crear tablas
+	if err := createTables(db); err != nil {
+		t.Fatalf("Error al crear tablas: %v", err)
+	}
+
+	return db
+}
+
+// CleanupTestDB limpia la base de datos de prueba
+func CleanupTestDB(t *testing.T) {
+	// Obtener variables de entorno
+	dbURL := os.Getenv("TEST_DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://postgres:postgres@localhost:5432/crime_map_test?sslmode=disable"
+	}
+
+	// Conectar a la base de datos
+	db, err := sqlx.Connect("postgres", dbURL)
+	if err != nil {
+		t.Fatalf("Error al conectar a la base de datos de prueba: %v", err)
+	}
+	defer db.Close()
+
+	// Eliminar registros
+	if err := deleteRecords(db); err != nil {
+		t.Fatalf("Error al eliminar registros: %v", err)
+	}
+}
+
+// createTables crea las tablas necesarias para las pruebas
+func createTables(db *sqlx.DB) error {
+	queries := []string{
+		`CREATE TABLE IF NOT EXISTS crimes (
+			id VARCHAR(36) PRIMARY KEY,
+			title VARCHAR(255) NOT NULL,
+			description TEXT NOT NULL,
+			crime_type VARCHAR(50) NOT NULL,
+			status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
 			latitude DOUBLE PRECISION NOT NULL,
 			longitude DOUBLE PRECISION NOT NULL,
 			address TEXT NOT NULL,
 			created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
-		);
-
-		CREATE TABLE IF NOT EXISTS crimes (
-			id UUID PRIMARY KEY,
-			type VARCHAR(100) NOT NULL,
-			description TEXT NOT NULL,
-			location_id INTEGER NOT NULL REFERENCES locations(id),
-			date TIMESTAMP WITH TIME ZONE NOT NULL,
-			status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
-			created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
-		);
-
-		CREATE INDEX IF NOT EXISTS idx_crimes_type ON crimes(type);
-		CREATE INDEX IF NOT EXISTS idx_crimes_date ON crimes(date);
-		CREATE INDEX IF NOT EXISTS idx_crimes_status ON crimes(status);
-		CREATE INDEX IF NOT EXISTS idx_locations_coordinates ON locations USING GIST (ll_to_earth(latitude, longitude));
-
-		-- Crear función para actualizar el timestamp updated_at
-		CREATE OR REPLACE FUNCTION update_updated_at_column()
-		RETURNS TRIGGER AS $$
-		BEGIN
-			NEW.updated_at = CURRENT_TIMESTAMP;
-			RETURN NEW;
-		END;
-		$$ language 'plpgsql';
-
-		-- Crear triggers para actualizar automáticamente el campo updated_at
-		DROP TRIGGER IF EXISTS update_crimes_updated_at ON crimes;
-		CREATE TRIGGER update_crimes_updated_at
+			updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			deleted_at TIMESTAMP WITH TIME ZONE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_crimes_status ON crimes(status)`,
+		`CREATE INDEX IF NOT EXISTS idx_crimes_type ON crimes(crime_type)`,
+		`CREATE INDEX IF NOT EXISTS idx_crimes_location ON crimes USING GIST (ll_to_earth(latitude, longitude))`,
+		`CREATE TRIGGER update_crimes_updated_at
 			BEFORE UPDATE ON crimes
 			FOR EACH ROW
-			EXECUTE FUNCTION update_updated_at_column();
-
-		DROP TRIGGER IF EXISTS update_locations_updated_at ON locations;
-		CREATE TRIGGER update_locations_updated_at
-			BEFORE UPDATE ON locations
-			FOR EACH ROW
-			EXECUTE FUNCTION update_updated_at_column();
-	`)
-	if err != nil {
-		t.Fatalf("Error al crear las tablas: %v", err)
+			EXECUTE FUNCTION update_updated_at_column()`,
 	}
 
-	// Limpiar los datos de las tablas antes de cada test
-	_, err = testDB.Exec(`
-		TRUNCATE TABLE crimes CASCADE;
-		TRUNCATE TABLE locations CASCADE;
-	`)
-	if err != nil {
-		t.Fatalf("Error al limpiar los datos de las tablas: %v", err)
+	for _, query := range queries {
+		if _, err := db.Exec(query); err != nil {
+			return fmt.Errorf("error al ejecutar query %s: %w", query, err)
+		}
 	}
 
-	return testDB
+	return nil
 }
 
-// CleanupTestDB limpia la base de datos de test
-func CleanupTestDB(t *testing.T) {
-	if testDB == nil {
-		return
+// deleteRecords elimina los registros de las tablas
+func deleteRecords(db *sqlx.DB) error {
+	queries := []string{
+		`DELETE FROM crimes`,
 	}
 
-	// Eliminar todas las tablas y funciones
-	_, err := testDB.Exec(`
-		DROP TABLE IF EXISTS crimes CASCADE;
-		DROP TABLE IF EXISTS locations CASCADE;
-		DROP FUNCTION IF EXISTS update_updated_at_column CASCADE;
-	`)
-	if err != nil {
-		t.Fatalf("Error al limpiar la base de datos de test: %v", err)
+	for _, query := range queries {
+		if _, err := db.Exec(query); err != nil {
+			return fmt.Errorf("error al ejecutar query %s: %w", query, err)
+		}
 	}
+
+	return nil
 }
 
 // getEnvOrDefault obtiene una variable de entorno o devuelve un valor por defecto

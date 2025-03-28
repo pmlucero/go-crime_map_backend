@@ -34,14 +34,10 @@ type Location struct {
 	Address   string  `json:"address"`   // Dirección descriptiva
 }
 
-// CrimeList representa una lista de delitos
+// CrimeList representa una lista paginada de delitos
 type CrimeList struct {
-	Crimes      []Crime `json:"crimes"`
-	Total       int64   `json:"total"`
-	Page        int     `json:"page"`
-	Limit       int     `json:"limit"`
-	TotalPages  int     `json:"total_pages"`
-	HasNextPage bool    `json:"has_next_page"`
+	Items []Crime `json:"items"`
+	Total int64   `json:"total"`
 }
 
 // CrimeStats representa las estadísticas de delitos
@@ -52,4 +48,6 @@ type CrimeStats struct {
 	CrimesByType     map[string]int64 `json:"crimes_by_type"`
 	CrimesByStatus   map[string]int64 `json:"crimes_by_status"`
 	CrimesByLocation map[string]int64 `json:"crimes_by_location"`
+	CrimesByAddress  map[string]int64 `json:"crimes_by_address"`
+	LastUpdate       time.Time        `json:"last_update"`
 }

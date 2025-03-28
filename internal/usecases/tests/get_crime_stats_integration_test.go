@@ -12,18 +12,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func strPtr(s string) *string {
-	return &s
-}
-
-func TestListCrimesUseCase_Integration(t *testing.T) {
+func TestGetCrimeStatsUseCase_Integration(t *testing.T) {
 	// Configurar base de datos de test
 	db := database.SetupTestDB(t)
 	defer database.CleanupTestDB(t)
 
 	// Crear el repositorio y los casos de uso
 	repo := infraRepo.NewPostgresCrimeRepository(db)
-	useCase := usecases.NewListCrimesUseCase(repo)
+	useCase := usecases.NewGetCrimeStatsUseCase(repo)
 	createCrimeUseCase := usecases.NewCreateCrimeUseCase(repo)
 
 	// Crear varios delitos de prueba
@@ -52,6 +48,14 @@ func TestListCrimesUseCase_Integration(t *testing.T) {
 			Longitude:   -58.383592,
 			Address:     "Av. Corrientes 3456",
 		},
+		{
+			Title:       "Robo de auto",
+			Type:        "ROBO",
+			Description: "Robo de vehículo estacionado",
+			Latitude:    -34.606722,
+			Longitude:   -58.384592,
+			Address:     "Av. Corrientes 4567",
+		},
 	}
 
 	for _, crimeInput := range crimes {
@@ -60,55 +64,27 @@ func TestListCrimesUseCase_Integration(t *testing.T) {
 		assert.NotNil(t, crime)
 	}
 
-	tests := []struct {
-		name          string
-		params        domain_usecases.ListCrimesParams
-		expectedCount int
-	}{
-		{
-			name: "listar todos los delitos",
-			params: domain_usecases.ListCrimesParams{
-				Page:  1,
-				Limit: 10,
-			},
-			expectedCount: 3,
-		},
-		{
-			name: "listar delitos con límite 2",
-			params: domain_usecases.ListCrimesParams{
-				Page:  1,
-				Limit: 2,
-			},
-			expectedCount: 2,
-		},
-		{
-			name: "listar delitos segunda página",
-			params: domain_usecases.ListCrimesParams{
-				Page:  2,
-				Limit: 2,
-			},
-			expectedCount: 1,
-		},
-	}
+	// Ejecutar el caso de uso
+	stats, err := useCase.Execute(context.Background())
+	assert.NoError(t, err)
+	assert.NotNil(t, stats)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, err := useCase.Execute(context.Background(), tt.params)
-			assert.NoError(t, err)
-			assert.NotNil(t, result)
-			assert.Len(t, result.Items, tt.expectedCount)
+	// Verificar las estadísticas
+	assert.Equal(t, int64(4), stats.TotalCrimes)
+	assert.Equal(t, int64(4), stats.ActiveCrimes)
+	assert.Equal(t, int64(0), stats.InactiveCrimes)
 
-			for _, crime := range result.Items {
-				assert.NotEmpty(t, crime.ID)
-				assert.NotEmpty(t, crime.Title)
-				assert.NotEmpty(t, crime.Type)
-				assert.NotEmpty(t, crime.Description)
-				assert.NotZero(t, crime.Location.Latitude)
-				assert.NotZero(t, crime.Location.Longitude)
-				assert.NotEmpty(t, crime.Location.Address)
-				assert.NotZero(t, crime.CreatedAt)
-				assert.NotZero(t, crime.UpdatedAt)
-			}
-		})
-	}
+	// Verificar conteo por tipo
+	assert.Equal(t, int64(2), stats.CrimesByType["ROBO"])
+	assert.Equal(t, int64(1), stats.CrimesByType["VANDALISMO"])
+	assert.Equal(t, int64(1), stats.CrimesByType["HURTO"])
+
+	// Verificar conteo por dirección
+	assert.Equal(t, int64(1), stats.CrimesByAddress["Av. Corrientes 1234"])
+	assert.Equal(t, int64(1), stats.CrimesByAddress["Av. Corrientes 2345"])
+	assert.Equal(t, int64(1), stats.CrimesByAddress["Av. Corrientes 3456"])
+	assert.Equal(t, int64(1), stats.CrimesByAddress["Av. Corrientes 4567"])
+
+	// Verificar que la última actualización está presente
+	assert.NotZero(t, stats.LastUpdate)
 }

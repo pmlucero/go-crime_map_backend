@@ -28,18 +28,18 @@ type CrimeRepository interface {
 	// Create crea un nuevo delito
 	Create(ctx context.Context, crime *entities.Crime) error
 
+	// List obtiene una lista paginada de delitos
+	List(ctx context.Context, page, limit int) ([]entities.Crime, int64, error)
+
 	// GetByID obtiene un delito por su ID
 	GetByID(ctx context.Context, id string) (*entities.Crime, error)
-
-	// List obtiene una lista de delitos con los filtros especificados
-	List(ctx context.Context, page, limit int, startDate, endDate *time.Time, crimeType, status *string) ([]entities.Crime, int64, error)
 
 	// Update actualiza un delito existente
 	Update(ctx context.Context, crime *entities.Crime) error
 
-	// Delete elimina un delito por su ID
+	// Delete realiza una eliminación lógica de un delito
 	Delete(ctx context.Context, id string) error
 
-	// GetStats obtiene estadísticas sobre los delitos
+	// GetStats obtiene estadísticas de delitos
 	GetStats(ctx context.Context) (*entities.CrimeStats, error)
 }

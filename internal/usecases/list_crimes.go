@@ -6,6 +6,7 @@ import (
 
 	"go-crime_map_backend/internal/domain/entities"
 	"go-crime_map_backend/internal/domain/repositories"
+	"go-crime_map_backend/internal/domain/usecases"
 )
 
 // ListCrimesInput representa los filtros para listar delitos
@@ -26,7 +27,7 @@ type ListCrimesOutput struct {
 	TotalPages int              // Total de páginas
 }
 
-// ListCrimesUseCase maneja la lógica de negocio para listar delitos
+// ListCrimesUseCase implementa la lógica de negocio para listar delitos
 type ListCrimesUseCase struct {
 	crimeRepository repositories.CrimeRepository
 }
@@ -48,20 +49,9 @@ func NewListCrimesUseCase(repo repositories.CrimeRepository) *ListCrimesUseCase 
 	}
 }
 
-// Execute ejecuta el caso de uso para listar delitos
-func (uc *ListCrimesUseCase) Execute(ctx context.Context, params ListCrimesParams) (*entities.CrimeList, error) {
-	// Ajustar las fechas para incluir todo el día
-	var startDate, endDate *time.Time
-	if params.StartDate != nil {
-		start := time.Date(params.StartDate.Year(), params.StartDate.Month(), params.StartDate.Day(), 0, 0, 0, 0, params.StartDate.Location())
-		startDate = &start
-	}
-	if params.EndDate != nil {
-		end := time.Date(params.EndDate.Year(), params.EndDate.Month(), params.EndDate.Day(), 23, 59, 59, 999999999, params.EndDate.Location())
-		endDate = &end
-	}
-
-	// Validar y ajustar parámetros de paginación
+// Execute ejecuta el caso de uso
+func (uc *ListCrimesUseCase) Execute(ctx context.Context, params usecases.ListCrimesParams) (*entities.CrimeList, error) {
+	// Validar parámetros
 	if params.Page < 1 {
 		params.Page = 1
 	}
@@ -73,20 +63,13 @@ func (uc *ListCrimesUseCase) Execute(ctx context.Context, params ListCrimesParam
 	}
 
 	// Obtener delitos del repositorio
-	crimes, total, err := uc.crimeRepository.List(ctx, params.Page, params.Limit, startDate, endDate, params.Type, params.Status)
+	crimes, total, err := uc.crimeRepository.List(ctx, params.Page, params.Limit)
 	if err != nil {
 		return nil, err
 	}
 
-	// Calcular total de páginas
-	totalPages := (total + int64(params.Limit) - 1) / int64(params.Limit)
-
 	return &entities.CrimeList{
-		Crimes:      crimes,
-		Total:       total,
-		Page:        params.Page,
-		Limit:       params.Limit,
-		TotalPages:  int(totalPages),
-		HasNextPage: params.Page < int(totalPages),
+		Items: crimes,
+		Total: total,
 	}, nil
 }

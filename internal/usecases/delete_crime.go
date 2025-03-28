@@ -2,39 +2,34 @@ package usecases
 
 import (
 	"context"
-	"errors"
+	"fmt"
+
 	"go-crime_map_backend/internal/domain/repositories"
-	"time"
 )
 
+// DeleteCrimeUseCase implementa la lógica de negocio para eliminar delitos
 type DeleteCrimeUseCase struct {
-	crimeRepo repositories.CrimeRepository
+	crimeRepository repositories.CrimeRepository
 }
 
+// NewDeleteCrimeUseCase crea una nueva instancia del caso de uso
 func NewDeleteCrimeUseCase(repo repositories.CrimeRepository) *DeleteCrimeUseCase {
 	return &DeleteCrimeUseCase{
-		crimeRepo: repo,
+		crimeRepository: repo,
 	}
 }
 
+// Execute ejecuta el caso de uso
 func (uc *DeleteCrimeUseCase) Execute(ctx context.Context, id string) error {
-	crime, err := uc.crimeRepo.GetByID(ctx, id)
-	if err != nil {
-		return err
+	// Validar datos de entrada
+	if id == "" {
+		return fmt.Errorf("el ID es requerido")
 	}
 
-	if crime == nil {
-		return errors.New("delito no encontrado")
+	// Eliminar del repositorio
+	if err := uc.crimeRepository.Delete(ctx, id); err != nil {
+		return fmt.Errorf("error al eliminar el delito: %w", err)
 	}
 
-	if crime.DeletedAt != nil {
-		return errors.New("el delito ya ha sido eliminado")
-	}
-
-	now := time.Now()
-	crime.Status = "deleted"
-	crime.DeletedAt = &now
-	crime.UpdatedAt = now
-
-	return uc.crimeRepo.Update(ctx, crime)
+	return nil
 }

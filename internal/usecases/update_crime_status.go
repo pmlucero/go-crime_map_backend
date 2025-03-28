@@ -2,71 +2,57 @@ package usecases
 
 import (
 	"context"
-	"errors"
+	"fmt"
+
 	"go-crime_map_backend/internal/domain/repositories"
-	"time"
+	"go-crime_map_backend/internal/domain/usecases"
 )
 
 // UpdateCrimeStatusInput representa los datos necesarios para actualizar el estado
 type UpdateCrimeStatusInput struct {
-	ID        string
-	NewStatus string
+	ID     string
+	Status string
 }
 
-// UpdateCrimeStatusUseCase maneja la lógica de negocio para actualizar el estado de un delito
+// UpdateCrimeStatusUseCase implementa la lógica de negocio para actualizar el estado de un delito
 type UpdateCrimeStatusUseCase struct {
-	crimeRepo repositories.CrimeRepository
+	crimeRepository repositories.CrimeRepository
 }
 
 // NewUpdateCrimeStatusUseCase crea una nueva instancia del caso de uso
 func NewUpdateCrimeStatusUseCase(repo repositories.CrimeRepository) *UpdateCrimeStatusUseCase {
 	return &UpdateCrimeStatusUseCase{
-		crimeRepo: repo,
+		crimeRepository: repo,
 	}
 }
 
-// Execute ejecuta el caso de uso para actualizar el estado de un delito
-func (uc *UpdateCrimeStatusUseCase) Execute(ctx context.Context, input UpdateCrimeStatusInput) error {
-	crime, err := uc.crimeRepo.GetByID(ctx, input.ID)
+// Execute ejecuta el caso de uso
+func (uc *UpdateCrimeStatusUseCase) Execute(ctx context.Context, input usecases.UpdateCrimeStatusInput) error {
+	// Validar datos de entrada
+	if input.ID == "" {
+		return fmt.Errorf("el ID es requerido")
+	}
+	if input.Status == "" {
+		return fmt.Errorf("el estado es requerido")
+	}
+
+	// Obtener el delito del repositorio
+	crime, err := uc.crimeRepository.GetByID(ctx, input.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("error al obtener el delito: %w", err)
 	}
 
 	if crime == nil {
-		return errors.New("delito no encontrado")
+		return fmt.Errorf("delito no encontrado")
 	}
 
-	if crime.DeletedAt != nil {
-		return errors.New("no se puede actualizar un delito eliminado")
+	// Actualizar el estado
+	crime.Status = input.Status
+
+	// Guardar en el repositorio
+	if err := uc.crimeRepository.Update(ctx, crime); err != nil {
+		return fmt.Errorf("error al actualizar el delito: %w", err)
 	}
 
-	if !isValidStatusTransition(crime.Status, input.NewStatus) {
-		return errors.New("transición de estado no válida")
-	}
-
-	crime.Status = input.NewStatus
-	crime.UpdatedAt = time.Now()
-
-	return uc.crimeRepo.Update(ctx, crime)
-}
-
-// isValidStatusTransition valida si la transición de estado es válida
-func isValidStatusTransition(currentStatus, newStatus string) bool {
-	validTransitions := map[string][]string{
-		"ACTIVE":   {"INACTIVE"},
-		"INACTIVE": {"ACTIVE"},
-	}
-
-	allowedStatuses, exists := validTransitions[currentStatus]
-	if !exists {
-		return false
-	}
-
-	for _, status := range allowedStatuses {
-		if status == newStatus {
-			return true
-		}
-	}
-
-	return false
+	return nil
 }

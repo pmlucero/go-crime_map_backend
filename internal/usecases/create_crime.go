@@ -2,13 +2,11 @@ package usecases
 
 import (
 	"context"
-	"errors"
-	"time"
+	"fmt"
 
 	"go-crime_map_backend/internal/domain/entities"
 	"go-crime_map_backend/internal/domain/repositories"
-
-	"github.com/google/uuid"
+	"go-crime_map_backend/internal/domain/usecases"
 )
 
 // CreateCrimeInput representa los datos necesarios para crear un delito
@@ -16,50 +14,61 @@ type CreateCrimeInput struct {
 	Title       string
 	Description string
 	Type        string
-	Location    entities.Location
+	Latitude    float64
+	Longitude   float64
+	Address     string
 }
 
-// CreateCrimeUseCase maneja la lógica de negocio para crear un nuevo delito
+// CreateCrimeUseCase implementa la lógica de negocio para crear delitos
 type CreateCrimeUseCase struct {
-	crimeRepo repositories.CrimeRepository
+	crimeRepository repositories.CrimeRepository
 }
 
 // NewCreateCrimeUseCase crea una nueva instancia del caso de uso
 func NewCreateCrimeUseCase(repo repositories.CrimeRepository) *CreateCrimeUseCase {
 	return &CreateCrimeUseCase{
-		crimeRepo: repo,
+		crimeRepository: repo,
 	}
 }
 
-// Execute ejecuta el caso de uso para crear un nuevo delito
-func (uc *CreateCrimeUseCase) Execute(ctx context.Context, input CreateCrimeInput) (*entities.Crime, error) {
-	now := time.Now().UTC()
-
-	// Validar que el tipo de delito no esté vacío
-	if input.Type == "" {
-		return nil, errors.New("el tipo de delito es requerido")
+// Execute ejecuta el caso de uso
+func (uc *CreateCrimeUseCase) Execute(ctx context.Context, input usecases.CreateCrimeInput) (*entities.Crime, error) {
+	// Validar datos de entrada
+	if input.Title == "" {
+		return nil, fmt.Errorf("el título es requerido")
 	}
-
-	// Validar que la descripción no esté vacía
 	if input.Description == "" {
-		return nil, errors.New("la descripción es requerida")
+		return nil, fmt.Errorf("la descripción es requerida")
+	}
+	if input.Type == "" {
+		return nil, fmt.Errorf("el tipo es requerido")
+	}
+	if input.Latitude < -90 || input.Latitude > 90 {
+		return nil, fmt.Errorf("la latitud debe estar entre -90 y 90")
+	}
+	if input.Longitude < -180 || input.Longitude > 180 {
+		return nil, fmt.Errorf("la longitud debe estar entre -180 y 180")
+	}
+	if input.Address == "" {
+		return nil, fmt.Errorf("la dirección es requerida")
 	}
 
-	// Crear la entidad Crime
+	// Crear entidad Crime
 	crime := &entities.Crime{
-		ID:          uuid.New().String(),
 		Title:       input.Title,
 		Description: input.Description,
 		Type:        input.Type,
 		Status:      "ACTIVE",
-		Location:    input.Location,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		Location: entities.Location{
+			Latitude:  input.Latitude,
+			Longitude: input.Longitude,
+			Address:   input.Address,
+		},
 	}
 
 	// Guardar en el repositorio
-	if err := uc.crimeRepo.Create(ctx, crime); err != nil {
-		return nil, err
+	if err := uc.crimeRepository.Create(ctx, crime); err != nil {
+		return nil, fmt.Errorf("error al crear el delito: %w", err)
 	}
 
 	return crime, nil

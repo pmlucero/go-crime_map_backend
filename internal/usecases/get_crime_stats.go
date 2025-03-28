@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"time"
 
@@ -26,23 +27,24 @@ type GetCrimeStatsInput struct {
 	Limit     int       // Límite de resultados para delitos recientes
 }
 
-// GetCrimeStatsUseCase maneja la lógica de negocio para obtener estadísticas
+// GetCrimeStatsUseCase implementa la lógica de negocio para obtener estadísticas de delitos
 type GetCrimeStatsUseCase struct {
-	crimeRepo repositories.CrimeRepository
+	crimeRepository repositories.CrimeRepository
 }
 
 // NewGetCrimeStatsUseCase crea una nueva instancia del caso de uso
 func NewGetCrimeStatsUseCase(repo repositories.CrimeRepository) *GetCrimeStatsUseCase {
 	return &GetCrimeStatsUseCase{
-		crimeRepo: repo,
+		crimeRepository: repo,
 	}
 }
 
-// Execute ejecuta el caso de uso para obtener estadísticas
+// Execute ejecuta el caso de uso
 func (uc *GetCrimeStatsUseCase) Execute(ctx context.Context) (*entities.CrimeStats, error) {
-	stats, err := uc.crimeRepo.GetStats(ctx)
+	// Obtener estadísticas del repositorio
+	stats, err := uc.crimeRepository.GetStats(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error al obtener estadísticas: %w", err)
 	}
 
 	return stats, nil

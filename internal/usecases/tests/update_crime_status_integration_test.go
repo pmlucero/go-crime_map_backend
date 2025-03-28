@@ -2,11 +2,10 @@ package tests
 
 import (
 	"context"
-	"strings"
 	"testing"
-	"time"
 
 	"go-crime_map_backend/internal/domain/entities"
+	domain_usecases "go-crime_map_backend/internal/domain/usecases"
 	"go-crime_map_backend/internal/infrastructure/database"
 	infraRepo "go-crime_map_backend/internal/infrastructure/repositories"
 	"go-crime_map_backend/internal/usecases"
@@ -19,85 +18,80 @@ func TestUpdateCrimeStatusUseCase_Integration(t *testing.T) {
 	db := database.SetupTestDB(t)
 	defer database.CleanupTestDB(t)
 
-	// Crear el repositorio y el caso de uso
+	// Crear el repositorio y los casos de uso
 	repo := infraRepo.NewPostgresCrimeRepository(db)
 	useCase := usecases.NewUpdateCrimeStatusUseCase(repo)
+	createCrimeUseCase := usecases.NewCreateCrimeUseCase(repo)
+	getCrimeUseCase := usecases.NewGetCrimeUseCase(repo)
 
 	// Crear un delito de prueba
-	testDate := time.Now().Add(-1 * time.Hour).UTC()
-	createCrimeUseCase := usecases.NewCreateCrimeUseCase(repo)
-	input := usecases.CreateCrimeInput{
-		Type:        "robo",
-		Description: "Robo a mano armada",
-		Location: usecases.Location{
-			Latitude:  -34.603722,
-			Longitude: -58.381592,
-			Address:   "Av. Corrientes 1234",
-		},
-		Date: testDate,
+	crimeInput := domain_usecases.CreateCrimeInput{
+		Title:       "Robo a mano armada",
+		Type:        "ROBO",
+		Description: "Robo a mano armada en comercio",
+		Latitude:    -34.603722,
+		Longitude:   -58.381592,
+		Address:     "Av. Corrientes 1234",
 	}
-	crime, err := createCrimeUseCase.Execute(context.Background(), input)
+
+	crime, err := createCrimeUseCase.Execute(context.Background(), crimeInput)
 	assert.NoError(t, err)
 	assert.NotNil(t, crime)
 
 	tests := []struct {
 		name          string
-		input         usecases.UpdateCrimeStatusInput
+		input         domain_usecases.UpdateCrimeStatusInput
 		expectedError string
 	}{
 		{
-			name: "actualizar estado a inactivo",
-			input: usecases.UpdateCrimeStatusInput{
-				CrimeID:   crime.ID,
-				NewStatus: entities.CrimeStatusInactive,
+			name: "actualizar estado a INACTIVE",
+			input: domain_usecases.UpdateCrimeStatusInput{
+				ID:     crime.ID,
+				Status: string(entities.CrimeStatusInactive),
 			},
 		},
 		{
-			name: "actualizar estado a activo",
-			input: usecases.UpdateCrimeStatusInput{
-				CrimeID:   crime.ID,
-				NewStatus: entities.CrimeStatusActive,
+			name: "actualizar estado a DELETED",
+			input: domain_usecases.UpdateCrimeStatusInput{
+				ID:     crime.ID,
+				Status: string(entities.CrimeStatusDeleted),
 			},
 		},
 		{
 			name: "error - delito no encontrado",
-			input: usecases.UpdateCrimeStatusInput{
-				CrimeID:   "123e4567-e89b-12d3-a456-426614174000",
-				NewStatus: entities.CrimeStatusInactive,
+			input: domain_usecases.UpdateCrimeStatusInput{
+				ID:     "123e4567-e89b-12d3-a456-426614174000",
+				Status: string(entities.CrimeStatusInactive),
 			},
-			expectedError: "recurso no encontrado",
+			expectedError: "delito no encontrado",
 		},
 		{
 			name: "error - estado inválido",
-			input: usecases.UpdateCrimeStatusInput{
-				CrimeID:   crime.ID,
-				NewStatus: "INVALID_STATUS",
+			input: domain_usecases.UpdateCrimeStatusInput{
+				ID:     crime.ID,
+				Status: "ESTADO_INVALIDO",
 			},
-			expectedError: "la transición de estado no es válida",
+			expectedError: "estado inválido",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Ejecutar el caso de uso
 			err := useCase.Execute(context.Background(), tt.input)
 
-			// Verificar el resultado
 			if tt.expectedError != "" {
 				assert.Error(t, err)
-				if !strings.Contains(err.Error(), tt.expectedError) {
-					t.Errorf("%s does not contain %s", err.Error(), tt.expectedError)
-				}
+				assert.Equal(t, tt.expectedError, err.Error())
 				return
 			}
 
 			assert.NoError(t, err)
 
-			// Verificar que el estado se actualizó en la base de datos
-			updatedCrime, err := repo.GetByID(context.Background(), tt.input.CrimeID)
+			// Verificar que el estado se actualizó correctamente
+			updatedCrime, err := getCrimeUseCase.Execute(context.Background(), tt.input.ID)
 			assert.NoError(t, err)
 			assert.NotNil(t, updatedCrime)
-			assert.Equal(t, tt.input.NewStatus, updatedCrime.Status)
+			assert.Equal(t, tt.input.Status, updatedCrime.Status)
 		})
 	}
 }

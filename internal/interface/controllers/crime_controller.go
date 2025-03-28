@@ -3,30 +3,31 @@ package controllers
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"go-crime_map_backend/internal/domain/entities"
-	"go-crime_map_backend/internal/usecases"
+	"go-crime_map_backend/internal/domain/usecases"
 
 	"github.com/gin-gonic/gin"
 )
 
+// CrimeController maneja las peticiones relacionadas con delitos
 type CrimeController struct {
-	createUseCase       *usecases.CreateCrimeUseCase
-	listUseCase         *usecases.ListCrimesUseCase
-	updateStatusUseCase *usecases.UpdateCrimeStatusUseCase
-	deleteUseCase       *usecases.DeleteCrimeUseCase
-	getStatsUseCase     *usecases.GetCrimeStatsUseCase
-	getUseCase          *usecases.GetCrimeUseCase
+	createUseCase       usecases.CreateCrimeUseCase
+	listUseCase         usecases.ListCrimesUseCase
+	updateStatusUseCase usecases.UpdateCrimeStatusUseCase
+	deleteUseCase       usecases.DeleteCrimeUseCase
+	getStatsUseCase     usecases.GetCrimeStatsUseCase
+	getCrimeUseCase     usecases.GetCrimeUseCase
 }
 
+// NewCrimeController crea una nueva instancia del controlador
 func NewCrimeController(
-	createUseCase *usecases.CreateCrimeUseCase,
-	listUseCase *usecases.ListCrimesUseCase,
-	updateStatusUseCase *usecases.UpdateCrimeStatusUseCase,
-	deleteUseCase *usecases.DeleteCrimeUseCase,
-	getStatsUseCase *usecases.GetCrimeStatsUseCase,
-	getUseCase *usecases.GetCrimeUseCase,
+	createUseCase usecases.CreateCrimeUseCase,
+	listUseCase usecases.ListCrimesUseCase,
+	updateStatusUseCase usecases.UpdateCrimeStatusUseCase,
+	deleteUseCase usecases.DeleteCrimeUseCase,
+	getStatsUseCase usecases.GetCrimeStatsUseCase,
+	getCrimeUseCase usecases.GetCrimeUseCase,
 ) *CrimeController {
 	return &CrimeController{
 		createUseCase:       createUseCase,
@@ -34,25 +35,25 @@ func NewCrimeController(
 		updateStatusUseCase: updateStatusUseCase,
 		deleteUseCase:       deleteUseCase,
 		getStatsUseCase:     getStatsUseCase,
-		getUseCase:          getUseCase,
+		getCrimeUseCase:     getCrimeUseCase,
 	}
 }
 
-// CreateCrime godoc
-// @Summary Crear un nuevo delito
-// @Description Crea un nuevo delito en el sistema
-// @Tags crimes
-// @Accept json
-// @Produce json
-// @Param crime body CreateCrimeRequest true "Datos del delito"
-// @Success 201 {object} entities.Crime
-// @Failure 400 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /crimes [post]
+// CreateCrimeRequest representa la estructura de la petición para crear un delito
+type CreateCrimeRequest struct {
+	Title       string  `json:"title" binding:"required"`
+	Description string  `json:"description" binding:"required"`
+	Type        string  `json:"type" binding:"required"`
+	Latitude    float64 `json:"latitude" binding:"required"`
+	Longitude   float64 `json:"longitude" binding:"required"`
+	Address     string  `json:"address" binding:"required"`
+}
+
+// CreateCrime maneja la creación de un nuevo delito
 func (c *CrimeController) CreateCrime(ctx *gin.Context) {
 	var req CreateCrimeRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -60,16 +61,14 @@ func (c *CrimeController) CreateCrime(ctx *gin.Context) {
 		Title:       req.Title,
 		Description: req.Description,
 		Type:        req.Type,
-		Location: entities.Location{
-			Latitude:  req.Latitude,
-			Longitude: req.Longitude,
-			Address:   req.Address,
-		},
+		Latitude:    req.Latitude,
+		Longitude:   req.Longitude,
+		Address:     req.Address,
 	}
 
-	crime, err := c.createUseCase.Execute(ctx.Request.Context(), input)
+	crime, err := c.createUseCase.Execute(ctx, input)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -94,202 +93,89 @@ type ListCrimesResponse struct {
 	TotalPages int              `json:"total_pages"`
 }
 
-// ListCrimes godoc
-// @Summary Listar delitos
-// @Description Obtiene una lista paginada de delitos con filtros opcionales
-// @Tags crimes
-// @Accept json
-// @Produce json
-// @Param type query string false "Tipo de delito"
-// @Param status query string false "Estado del delito"
-// @Param start_date query string false "Fecha inicial (formato: 2006-01-02T15:04:05Z)"
-// @Param end_date query string false "Fecha final (formato: 2006-01-02T15:04:05Z)"
-// @Param limit query int false "Límite de resultados por página (default: 10, max: 100)"
-// @Param page query int false "Número de página (default: 1)"
-// @Success 200 {object} ListCrimesResponse
-// @Failure 400 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /crimes [get]
+// ListCrimes maneja el listado de delitos
 func (c *CrimeController) ListCrimes(ctx *gin.Context) {
-	// Obtener y validar parámetros de paginación
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
 
-	// Obtener y validar fechas
-	var startDate, endDate *time.Time
-	if startDateStr := ctx.Query("start_date"); startDateStr != "" {
-		parsedDate, err := time.Parse("2006-01-02", startDateStr)
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Formato de fecha inicial inválido. Use YYYY-MM-DD"})
-			return
-		}
-		startDate = &parsedDate
+	params := usecases.ListCrimesParams{
+		Page:  page,
+		Limit: limit,
 	}
 
-	if endDateStr := ctx.Query("end_date"); endDateStr != "" {
-		parsedDate, err := time.Parse("2006-01-02", endDateStr)
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Formato de fecha final inválido. Use YYYY-MM-DD"})
-			return
-		}
-		endDate = &parsedDate
-	}
-
-	// Obtener y validar tipo y estado
-	var crimeType, status *string
-	if typeStr := ctx.Query("type"); typeStr != "" {
-		crimeType = &typeStr
-	}
-	if statusStr := ctx.Query("status"); statusStr != "" {
-		status = &statusStr
-	}
-
-	// Ejecutar caso de uso
-	result, err := c.listUseCase.Execute(ctx.Request.Context(), usecases.ListCrimesParams{
-		Page:      page,
-		Limit:     limit,
-		StartDate: startDate,
-		EndDate:   endDate,
-		Type:      crimeType,
-		Status:    status,
-	})
-
+	crimes, err := c.listUseCase.Execute(ctx, params)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, result)
+	ctx.JSON(http.StatusOK, crimes)
 }
 
-// UpdateCrimeStatus godoc
-// @Summary Actualizar estado de un delito
-// @Description Actualiza el estado de un delito existente
-// @Tags crimes
-// @Accept json
-// @Produce json
-// @Param id path string true "ID del delito"
-// @Param status body UpdateStatusRequest true "Nuevo estado"
-// @Success 200 {object} entities.Crime
-// @Failure 400 {object} ErrorResponse
-// @Failure 404 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /crimes/{id}/status [patch]
+// UpdateStatusRequest representa la estructura de la petición para actualizar el estado de un delito
+type UpdateStatusRequest struct {
+	Status string `json:"status" binding:"required"`
+}
+
+// UpdateCrimeStatus maneja la actualización del estado de un delito
 func (c *CrimeController) UpdateCrimeStatus(ctx *gin.Context) {
 	id := ctx.Param("id")
-	if id == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "ID no proporcionado"})
-		return
-	}
-
 	var req UpdateStatusRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	input := usecases.UpdateCrimeStatusInput{
-		ID:        id,
-		NewStatus: req.Status,
+		ID:     id,
+		Status: req.Status,
 	}
 
-	err := c.updateStatusUseCase.Execute(ctx.Request.Context(), input)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := c.updateStatusUseCase.Execute(ctx, input); err != nil {
+		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	ctx.Status(http.StatusOK)
 }
 
-// DeleteCrime godoc
-// @Summary Eliminar un delito
-// @Description Realiza una eliminación lógica de un delito
-// @Tags crimes
-// @Accept json
-// @Produce json
-// @Param id path string true "ID del delito"
-// @Success 200 {object} entities.Crime
-// @Failure 400 {object} ErrorResponse
-// @Failure 404 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /crimes/{id} [delete]
+// DeleteCrime maneja la eliminación de un delito
 func (c *CrimeController) DeleteCrime(ctx *gin.Context) {
 	id := ctx.Param("id")
-	if id == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "ID no proporcionado"})
-		return
-	}
 
-	err := c.deleteUseCase.Execute(ctx.Request.Context(), id)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := c.deleteUseCase.Execute(ctx, id); err != nil {
+		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	ctx.Status(http.StatusOK)
 }
 
-// GetCrimeStats godoc
-// @Summary Obtener estadísticas de delitos
-// @Description Obtiene estadísticas sobre los delitos registrados
-// @Tags crimes
-// @Accept json
-// @Produce json
-// @Success 200 {object} entities.CrimeStats
-// @Failure 500 {object} ErrorResponse
-// @Router /crimes/stats [get]
+// GetCrimeStats maneja la obtención de estadísticas de delitos
 func (c *CrimeController) GetCrimeStats(ctx *gin.Context) {
-	stats, err := c.getStatsUseCase.Execute(ctx.Request.Context())
+	stats, err := c.getStatsUseCase.Execute(ctx)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, stats)
 }
 
-// GetCrime godoc
-// @Summary Obtener un delito por ID
-// @Description Obtiene los detalles de un delito específico
-// @Tags crimes
-// @Accept json
-// @Produce json
-// @Param id path string true "ID del delito"
-// @Success 200 {object} entities.Crime
-// @Failure 404 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /crimes/{id} [get]
+// GetCrime maneja la obtención de un delito por ID
 func (c *CrimeController) GetCrime(ctx *gin.Context) {
 	id := ctx.Param("id")
-	if id == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "ID no proporcionado"})
-		return
-	}
 
-	crime, err := c.getUseCase.Execute(ctx.Request.Context(), id)
+	crime, err := c.getCrimeUseCase.Execute(ctx, id)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, crime)
 }
 
-// Request/Response structs
-type CreateCrimeRequest struct {
-	Title       string  `json:"title" binding:"required"`
-	Description string  `json:"description" binding:"required"`
-	Type        string  `json:"type" binding:"required"`
-	Latitude    float64 `json:"latitude" binding:"required"`
-	Longitude   float64 `json:"longitude" binding:"required"`
-	Address     string  `json:"address" binding:"required"`
-}
-
-type UpdateStatusRequest struct {
-	Status string `json:"status" binding:"required"`
-}
-
+// ErrorResponse representa la estructura de una respuesta de error
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
