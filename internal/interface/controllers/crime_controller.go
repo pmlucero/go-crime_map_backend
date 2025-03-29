@@ -41,12 +41,17 @@ func NewCrimeController(
 
 // CreateCrimeRequest representa la estructura de la petición para crear un delito
 type CreateCrimeRequest struct {
-	Title       string  `json:"title" binding:"required" example:"Robo a mano armada"`
-	Description string  `json:"description" binding:"required" example:"Robo a mano armada en comercio"`
-	Type        string  `json:"type" binding:"required" example:"ROBO"`
-	Latitude    float64 `json:"latitude" binding:"required" example:"-34.603722"`
-	Longitude   float64 `json:"longitude" binding:"required" example:"-58.381592"`
-	Address     string  `json:"address" binding:"required" example:"Av. Corrientes 1234"`
+	Title         string  `json:"title" binding:"required" example:"Robo a mano armada"`
+	Description   string  `json:"description" binding:"required" example:"Robo a mano armada en comercio"`
+	Type          string  `json:"type" binding:"required" example:"ROBO"`
+	Latitude      float64 `json:"latitude" binding:"required" example:"-34.603722"`
+	Longitude     float64 `json:"longitude" binding:"required" example:"-58.381592"`
+	Address       string  `json:"address" binding:"required" example:"Av. Corrientes"`
+	AddressNumber string  `json:"address_number" binding:"required" example:"1234"`
+	City          string  `json:"city" binding:"required" example:"Buenos Aires"`
+	Province      string  `json:"province" binding:"required" example:"Buenos Aires"`
+	Country       string  `json:"country" binding:"required" example:"Argentina"`
+	ZipCode       string  `json:"zip_code" binding:"required" example:"1000"`
 }
 
 // @Summary      Crear un nuevo delito
@@ -68,12 +73,17 @@ func (c *CrimeController) CreateCrime(ctx *gin.Context) {
 	}
 
 	input := usecases.CreateCrimeInput{
-		Title:       req.Title,
-		Description: req.Description,
-		Type:        req.Type,
-		Latitude:    req.Latitude,
-		Longitude:   req.Longitude,
-		Address:     req.Address,
+		Title:         req.Title,
+		Description:   req.Description,
+		Type:          req.Type,
+		Latitude:      req.Latitude,
+		Longitude:     req.Longitude,
+		Address:       req.Address,
+		AddressNumber: req.AddressNumber,
+		City:          req.City,
+		Province:      req.Province,
+		Country:       req.Country,
+		ZipCode:       req.ZipCode,
 	}
 
 	crime, err := c.createUseCase.Execute(ctx, input)

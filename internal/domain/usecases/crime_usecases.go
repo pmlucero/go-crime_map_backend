@@ -8,12 +8,17 @@ import (
 
 // CreateCrimeInput representa los datos de entrada para crear un delito
 type CreateCrimeInput struct {
-	Title       string
-	Description string
-	Type        string
-	Latitude    float64
-	Longitude   float64
-	Address     string
+	Title         string
+	Description   string
+	Type          string
+	Latitude      float64
+	Longitude     float64
+	Address       string
+	AddressNumber string
+	City          string
+	Province      string
+	Country       string
+	ZipCode       string
 }
 
 // CreateCrimeUseCase define la interfaz para crear delitos

@@ -57,3 +57,10 @@ CREATE TRIGGER update_locations_updated_at
     BEFORE UPDATE ON locations
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column(); 
+
+ALTER TABLE crimes
+   ADD COLUMN address_number VARCHAR(50),
+   ADD COLUMN city VARCHAR(100),
+   ADD COLUMN province VARCHAR(100),
+   ADD COLUMN country VARCHAR(100),
+   ADD COLUMN zip_code VARCHAR(20);

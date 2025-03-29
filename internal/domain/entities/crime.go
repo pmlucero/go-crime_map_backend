@@ -29,9 +29,14 @@ type Crime struct {
 
 // Location representa la ubicación geográfica de un delito
 type Location struct {
-	Latitude  float64 `json:"latitude"`  // Latitud
-	Longitude float64 `json:"longitude"` // Longitud
-	Address   string  `json:"address"`   // Dirección descriptiva
+	Latitude      float64 `json:"latitude"`       // Latitud
+	Longitude     float64 `json:"longitude"`      // Longitud
+	Address       string  `json:"address"`        // Dirección descriptiva
+	AddressNumber string  `json:"address_number"` // Número de la dirección
+	City          string  `json:"city"`           // Ciudad
+	Province      string  `json:"province"`       // Provincia
+	Country       string  `json:"country"`        // País
+	ZipCode       string  `json:"zip_code"`       // Código postal
 }
 
 // CrimeList representa una lista paginada de delitos
