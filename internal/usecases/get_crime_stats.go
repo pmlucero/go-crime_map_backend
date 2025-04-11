@@ -2,7 +2,6 @@ package usecases
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"time"
 
@@ -44,7 +43,7 @@ func (uc *GetCrimeStatsUseCase) Execute(ctx context.Context) (*entities.CrimeSta
 	// Obtener estadísticas del repositorio
 	stats, err := uc.crimeRepository.GetStats(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error al obtener estadísticas: %w", err)
+		return nil, err
 	}
 
 	return stats, nil

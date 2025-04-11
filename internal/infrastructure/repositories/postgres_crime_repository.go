@@ -27,12 +27,12 @@ func (r *PostgresCrimeRepository) Create(ctx context.Context, crime *entities.Cr
 	query := `
 		INSERT INTO crimes (
 			id, title, description, crime_type, status,
-			latitude, longitude, address,
+			latitude, longitude, address, address_number, city, province, country, zip_code,
 			created_at, updated_at
 		) VALUES (
 			$1, $2, $3, $4, $5,
-			$6, $7, $8,
-			$9, $10
+			$6, $7, $8, $9, $10, $11, $12, $13,
+			$14, $15
 		)
 	`
 
@@ -45,6 +45,11 @@ func (r *PostgresCrimeRepository) Create(ctx context.Context, crime *entities.Cr
 		crime.Location.Latitude,
 		crime.Location.Longitude,
 		crime.Location.Address,
+		crime.Location.AddressNumber,
+		crime.Location.City,
+		crime.Location.Province,
+		crime.Location.Country,
+		crime.Location.ZipCode,
 		crime.CreatedAt,
 		crime.UpdatedAt,
 	)
@@ -71,7 +76,14 @@ func (r *PostgresCrimeRepository) List(ctx context.Context, page, limit int) ([]
 	query := `
 		SELECT 
 			id, title, description, crime_type, status,
-			latitude, longitude, address,
+			latitude as "location.latitude",
+			longitude as "location.longitude",
+			address as "location.address",
+			address_number as "location.address_number",
+			city as "location.city",
+			province as "location.province",
+			country as "location.country",
+			zip_code as "location.zip_code",
 			created_at, updated_at, deleted_at
 		FROM crimes
 		WHERE deleted_at IS NULL
@@ -93,7 +105,14 @@ func (r *PostgresCrimeRepository) GetByID(ctx context.Context, id string) (*enti
 	query := `
 		SELECT 
 			id, title, description, crime_type, status,
-			latitude, longitude, address,
+			latitude as "location.latitude",
+			longitude as "location.longitude",
+			address as "location.address",
+			address_number as "location.address_number",
+			city as "location.city",
+			province as "location.province",
+			country as "location.country",
+			zip_code as "location.zip_code",
 			created_at, updated_at, deleted_at
 		FROM crimes
 		WHERE id = $1 AND deleted_at IS NULL
@@ -103,6 +122,18 @@ func (r *PostgresCrimeRepository) GetByID(ctx context.Context, id string) (*enti
 	err := r.db.GetContext(ctx, &crime, query, id)
 	if err != nil {
 		return nil, fmt.Errorf("error al obtener el delito: %w", err)
+	}
+
+	// Mapear los campos de la ubicación
+	crime.Location = entities.Location{
+		Latitude:      crime.Location.Latitude,
+		Longitude:     crime.Location.Longitude,
+		Address:       crime.Location.Address,
+		AddressNumber: crime.Location.AddressNumber,
+		City:          crime.Location.City,
+		Province:      crime.Location.Province,
+		Country:       crime.Location.Country,
+		ZipCode:       crime.Location.ZipCode,
 	}
 
 	return &crime, nil
@@ -120,8 +151,13 @@ func (r *PostgresCrimeRepository) Update(ctx context.Context, crime *entities.Cr
 			latitude = $5,
 			longitude = $6,
 			address = $7,
-			updated_at = $8
-		WHERE id = $9 AND deleted_at IS NULL
+			address_number = $8,
+			city = $9,
+			province = $10,
+			country = $11,
+			zip_code = $12,
+			updated_at = $13
+		WHERE id = $14 AND deleted_at IS NULL
 	`
 
 	result, err := r.db.ExecContext(ctx, query,
@@ -132,6 +168,11 @@ func (r *PostgresCrimeRepository) Update(ctx context.Context, crime *entities.Cr
 		crime.Location.Latitude,
 		crime.Location.Longitude,
 		crime.Location.Address,
+		crime.Location.AddressNumber,
+		crime.Location.City,
+		crime.Location.Province,
+		crime.Location.Country,
+		crime.Location.ZipCode,
 		time.Now(),
 		crime.ID,
 	)

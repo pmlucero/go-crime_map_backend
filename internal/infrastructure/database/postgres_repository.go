@@ -23,7 +23,8 @@ func NewPostgresCrimeRepository(db *sql.DB) *PostgresCrimeRepository {
 // GetByID obtiene un delito por su ID
 func (r *PostgresCrimeRepository) GetByID(ctx context.Context, id string) (*entities.Crime, error) {
 	query := `
-		SELECT id, title, description, crime_type, status, latitude, longitude, address, created_at, updated_at, deleted_at
+		SELECT id, title, description, crime_type, status, latitude, longitude,
+		 address, address_number, city, province, country, zip_code, created_at, updated_at, deleted_at
 		FROM crimes
 		WHERE id = $1 AND deleted_at IS NULL
 	`
@@ -38,6 +39,11 @@ func (r *PostgresCrimeRepository) GetByID(ctx context.Context, id string) (*enti
 		&crime.Location.Latitude,
 		&crime.Location.Longitude,
 		&crime.Location.Address,
+		&crime.Location.AddressNumber,
+		&crime.Location.City,
+		&crime.Location.Province,
+		&crime.Location.Country,
+		&crime.Location.ZipCode,
 		&crime.CreatedAt,
 		&crime.UpdatedAt,
 		&crime.DeletedAt,
@@ -57,8 +63,8 @@ func (r *PostgresCrimeRepository) GetByID(ctx context.Context, id string) (*enti
 // Create crea un nuevo delito
 func (r *PostgresCrimeRepository) Create(ctx context.Context, crime *entities.Crime) error {
 	query := `
-		INSERT INTO crimes (id, title, description, crime_type, status, latitude, longitude, address, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		INSERT INTO crimes (id, title, description, crime_type, status, latitude, longitude, address, address_number, city, province, country, zip_code, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 	`
 
 	_, err := r.db.ExecContext(ctx, query,
@@ -70,6 +76,11 @@ func (r *PostgresCrimeRepository) Create(ctx context.Context, crime *entities.Cr
 		crime.Location.Latitude,
 		crime.Location.Longitude,
 		crime.Location.Address,
+		crime.Location.AddressNumber,
+		crime.Location.City,
+		crime.Location.Province,
+		crime.Location.Country,
+		crime.Location.ZipCode,
 		crime.CreatedAt,
 		crime.UpdatedAt,
 	)
@@ -92,9 +103,10 @@ func (r *PostgresCrimeRepository) Update(ctx context.Context, crime *entities.Cr
 	query := `
 		UPDATE crimes
 		SET title = $1, description = $2, crime_type = $3, status = $4,
-			latitude = $5, longitude = $6, address = $7, updated_at = $8,
-			deleted_at = $9
-		WHERE id = $10
+			latitude = $5, longitude = $6, address = $7, address_number = $8, 
+			city = $9, province = $10, country = $11, zip_code = $12, updated_at = $13,
+			deleted_at = $14
+		WHERE id = $15
 	`
 
 	result, err := r.db.ExecContext(ctx, query,
@@ -105,6 +117,11 @@ func (r *PostgresCrimeRepository) Update(ctx context.Context, crime *entities.Cr
 		crime.Location.Latitude,
 		crime.Location.Longitude,
 		crime.Location.Address,
+		crime.Location.AddressNumber,
+		crime.Location.City,
+		crime.Location.Province,
+		crime.Location.Country,
+		crime.Location.ZipCode,
 		crime.UpdatedAt,
 		crime.DeletedAt,
 		crime.ID,

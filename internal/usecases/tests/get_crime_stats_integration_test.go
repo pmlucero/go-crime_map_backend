@@ -8,6 +8,7 @@ import (
 	"go-crime_map_backend/internal/infrastructure/database"
 	infraRepo "go-crime_map_backend/internal/infrastructure/repositories"
 	"go-crime_map_backend/internal/usecases"
+	"go-crime_map_backend/internal/utils"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -25,36 +26,56 @@ func TestGetCrimeStatsUseCase_Integration(t *testing.T) {
 	// Crear varios delitos de prueba
 	crimes := []domain_usecases.CreateCrimeInput{
 		{
-			Title:       "Robo a mano armada",
-			Type:        "ROBO",
-			Description: "Robo a mano armada en comercio",
-			Latitude:    -34.603722,
-			Longitude:   -58.381592,
-			Address:     "Av. Corrientes 1234",
+			Title:         "Robo a mano armada",
+			Type:          "ROBO",
+			Description:   "Robo a mano armada en comercio",
+			Latitude:      -34.603722,
+			Longitude:     -58.381592,
+			Address:       "Av. Corrientes",
+			AddressNumber: utils.StringPtr("1234"),
+			City:          utils.StringPtr("Buenos Aires"),
+			Province:      utils.StringPtr("Buenos Aires"),
+			Country:       utils.StringPtr("Argentina"),
+			ZipCode:       utils.StringPtr("C1043"),
 		},
 		{
-			Title:       "Vandalismo",
-			Type:        "VANDALISMO",
-			Description: "Daños a propiedad pública",
-			Latitude:    -34.604722,
-			Longitude:   -58.382592,
-			Address:     "Av. Corrientes 2345",
+			Title:         "Vandalismo",
+			Type:          "VANDALISMO",
+			Description:   "Daños a propiedad pública",
+			Latitude:      -34.604722,
+			Longitude:     -58.382592,
+			Address:       "Av. Corrientes",
+			AddressNumber: utils.StringPtr("2345"),
+			City:          utils.StringPtr("Buenos Aires"),
+			Province:      utils.StringPtr("Buenos Aires"),
+			Country:       utils.StringPtr("Argentina"),
+			ZipCode:       utils.StringPtr("C1043"),
 		},
 		{
-			Title:       "Hurto",
-			Type:        "HURTO",
-			Description: "Hurto de celular",
-			Latitude:    -34.605722,
-			Longitude:   -58.383592,
-			Address:     "Av. Corrientes 3456",
+			Title:         "Hurto",
+			Type:          "HURTO",
+			Description:   "Hurto de celular",
+			Latitude:      -34.605722,
+			Longitude:     -58.383592,
+			Address:       "Av. Corrientes",
+			AddressNumber: utils.StringPtr("3456"),
+			City:          utils.StringPtr("Buenos Aires"),
+			Province:      utils.StringPtr("Buenos Aires"),
+			Country:       utils.StringPtr("Argentina"),
+			ZipCode:       utils.StringPtr("C1043"),
 		},
 		{
-			Title:       "Robo de auto",
-			Type:        "ROBO",
-			Description: "Robo de vehículo estacionado",
-			Latitude:    -34.606722,
-			Longitude:   -58.384592,
-			Address:     "Av. Corrientes 4567",
+			Title:         "Robo de auto",
+			Type:          "ROBO",
+			Description:   "Robo de vehículo estacionado",
+			Latitude:      -34.606722,
+			Longitude:     -58.384592,
+			Address:       "Av. Corrientes",
+			AddressNumber: utils.StringPtr("4567"),
+			City:          utils.StringPtr("Buenos Aires"),
+			Province:      utils.StringPtr("Buenos Aires"),
+			Country:       utils.StringPtr("Argentina"),
+			ZipCode:       utils.StringPtr("C1043"),
 		},
 	}
 
@@ -78,6 +99,10 @@ func TestGetCrimeStatsUseCase_Integration(t *testing.T) {
 	assert.Equal(t, int64(2), stats.CrimesByType["ROBO"])
 	assert.Equal(t, int64(1), stats.CrimesByType["VANDALISMO"])
 	assert.Equal(t, int64(1), stats.CrimesByType["HURTO"])
+
+	// Verificar conteo por estado
+	assert.Equal(t, int64(4), stats.CrimesByStatus["ACTIVE"])
+	assert.Equal(t, int64(0), stats.CrimesByStatus["INACTIVE"])
 
 	// Verificar conteo por dirección
 	assert.Equal(t, int64(1), stats.CrimesByAddress["Av. Corrientes 1234"])
