@@ -42,6 +42,7 @@ func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
 	tests := []struct {
 		name          string
 		mockSetup     func()
+		expectedStats *entities.CrimeStats
 		expectedError error
 	}{
 		{
@@ -49,6 +50,7 @@ func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
 			mockSetup: func() {
 				mockRepo.On("GetStats", ctx).Return(stats, nil)
 			},
+			expectedStats: stats,
 			expectedError: nil,
 		},
 		{
@@ -56,6 +58,7 @@ func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
 			mockSetup: func() {
 				mockRepo.On("GetStats", ctx).Return(nil, assert.AnError)
 			},
+			expectedStats: nil,
 			expectedError: assert.AnError,
 		},
 	}
@@ -78,12 +81,12 @@ func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.NotNil(t, result)
-			assert.Equal(t, stats.TotalCrimes, result.TotalCrimes)
-			assert.Equal(t, stats.ActiveCrimes, result.ActiveCrimes)
-			assert.Equal(t, stats.InactiveCrimes, result.InactiveCrimes)
-			assert.Equal(t, stats.CrimesByType, result.CrimesByType)
-			assert.Equal(t, stats.CrimesByStatus, result.CrimesByStatus)
-			assert.Equal(t, stats.CrimesByLocation, result.CrimesByLocation)
+			assert.Equal(t, tt.expectedStats.TotalCrimes, result.TotalCrimes)
+			assert.Equal(t, tt.expectedStats.ActiveCrimes, result.ActiveCrimes)
+			assert.Equal(t, tt.expectedStats.InactiveCrimes, result.InactiveCrimes)
+			assert.Equal(t, tt.expectedStats.CrimesByType, result.CrimesByType)
+			assert.Equal(t, tt.expectedStats.CrimesByStatus, result.CrimesByStatus)
+			assert.Equal(t, tt.expectedStats.CrimesByLocation, result.CrimesByLocation)
 		})
 	}
 }

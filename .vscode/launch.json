@@ -1,0 +1,22 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug All Tests",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "${workspaceFolder}/internal/interface/controllers/tests",
+            "args": [
+                "-test.run",
+                ".*",
+                "-test.shuffle",
+                "on"
+            ],
+            "env": {},
+            "buildFlags": "",
+            "logOutput": "debugger",
+            "showLog": true
+        }
+    ]
+}

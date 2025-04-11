@@ -1,0 +1,40 @@
+Como ejecutar un test?
+Ej. TestGetCrimeStats
+
+go test -v go-crime_map_backend/internal/interface/controllers/tests -run TestGetCrimeStats
+
+Detalle:
+-v: muestra el output detallado (verbose)
+-run TestGetCrimeStats: ejecuta solo los tests que coincidan con este patrón
+go-crime_map_backend/internal/interface/controllers/tests: es la ruta al paquete que contiene el test
+
+También se podria ejecutar desde el directorio
+
+cd internal/interface/controllers/tests
+go test -v -run TestGetCrimeStats
+
+----------------------------
+Depurador para GO que me permite ejecutar en modo debug
+
+go install github.com/go-delve/delve/cmd/dlv@latest
+
+Para ejecutar el testcases error_al_obtener_estadísticas en modo debug:
+
+dlv test go-crime_map_backend/internal/interface/controllers/tests -- -test.run ^TestGetCrimeStats$/error_al_obtener_estadísticas
+
+Usa los comandos de Delve para depurar:
+b <línea>: establece un punto de interrupción en una línea específica.
+c: continúa la ejecución hasta el siguiente punto de interrupción.
+n: ejecuta la siguiente línea de código.
+s: entra en la función llamada en la línea actual.
+p <variable>: imprime el valor de una variable.
+
+Ej:
+   dlv test go-crime_map_backend/internal/interface/controllers/tests 
+   -- -test.run ^TestGetCrimeStats$/error_al_obtener_estadísticas
+
+----------------------------
+
+Desde consola, cuando ejecuto el test en forma individual funciona correctamente:
+
+go test ./internal/interface/controllers/tests -v -run "^TestGetCrimeStats$/error_al_obtener_estadísticas"

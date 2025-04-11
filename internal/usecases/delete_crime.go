@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"go-crime_map_backend/internal/domain/entities"
 	"go-crime_map_backend/internal/domain/repositories"
 )
 
@@ -24,6 +25,21 @@ func (uc *DeleteCrimeUseCase) Execute(ctx context.Context, id string) error {
 	// Validar datos de entrada
 	if id == "" {
 		return fmt.Errorf("el ID es requerido")
+	}
+
+	// Verificar que el delito existe
+	crime, err := uc.crimeRepository.GetByID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("error al obtener el delito: %w", err)
+	}
+
+	if crime == nil {
+		return fmt.Errorf("delito no encontrado")
+	}
+
+	// Verificar que el delito no esté ya eliminado
+	if crime.Status == string(entities.CrimeStatusDeleted) {
+		return fmt.Errorf("el delito ya fue eliminado")
 	}
 
 	// Eliminar del repositorio

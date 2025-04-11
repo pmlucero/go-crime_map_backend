@@ -7,6 +7,8 @@ import (
 	"go-crime_map_backend/internal/domain/entities"
 	"go-crime_map_backend/internal/domain/repositories"
 	"go-crime_map_backend/internal/domain/usecases"
+
+	"github.com/google/uuid"
 )
 
 // CreateCrimeInput representa los datos necesarios para crear un delito
@@ -17,11 +19,11 @@ type CreateCrimeInput struct {
 	Latitude      float64
 	Longitude     float64
 	Address       string
-	AddressNumber string
-	City          string
-	Province      string
-	Country       string
-	ZipCode       string
+	AddressNumber *string
+	City          *string
+	Province      *string
+	Country       *string
+	ZipCode       *string
 }
 
 // CreateCrimeUseCase implementa la lógica de negocio para crear delitos
@@ -57,24 +59,25 @@ func (uc *CreateCrimeUseCase) Execute(ctx context.Context, input usecases.Create
 	if input.Address == "" {
 		return nil, fmt.Errorf("la dirección es requerida")
 	}
-	if input.AddressNumber == "" {
+	if input.AddressNumber == nil {
 		return nil, fmt.Errorf("el número de la dirección es requerido")
 	}
-	if input.City == "" {
+	if input.City == nil {
 		return nil, fmt.Errorf("la ciudad es requerida")
 	}
-	if input.Province == "" {
+	if input.Province == nil {
 		return nil, fmt.Errorf("la provincia es requerida")
 	}
-	if input.Country == "" {
+	if input.Country == nil {
 		return nil, fmt.Errorf("el país es requerido")
 	}
-	if input.ZipCode == "" {
+	if input.ZipCode == nil {
 		return nil, fmt.Errorf("el código postal es requerido")
 	}
 
 	// Crear entidad Crime
 	crime := &entities.Crime{
+		ID:          uuid.New().String(),
 		Title:       input.Title,
 		Description: input.Description,
 		Type:        input.Type,

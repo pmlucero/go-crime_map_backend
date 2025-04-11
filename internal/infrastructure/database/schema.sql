@@ -1,3 +1,12 @@
+-- Crear función para actualizar el timestamp updated_at
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
 -- Crear la tabla de ubicaciones
 CREATE TABLE IF NOT EXISTS locations (
     id SERIAL PRIMARY KEY,
@@ -21,6 +30,11 @@ CREATE TABLE crimes (
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
     address TEXT NOT NULL,
+    address_number VARCHAR(50),
+    city VARCHAR(100),
+    province VARCHAR(100),
+    country VARCHAR(100),
+    zip_code VARCHAR(20),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE
@@ -38,15 +52,6 @@ CREATE INDEX idx_crimes_crime_type ON crimes(crime_type);
 CREATE INDEX idx_crimes_created_at ON crimes(created_at);
 CREATE INDEX idx_crimes_deleted_at ON crimes(deleted_at);
 
--- Crear función para actualizar el timestamp updated_at
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
 -- Crear trigger para actualizar updated_at
 CREATE TRIGGER update_crimes_updated_at
     BEFORE UPDATE ON crimes
@@ -56,11 +61,4 @@ CREATE TRIGGER update_crimes_updated_at
 CREATE TRIGGER update_locations_updated_at
     BEFORE UPDATE ON locations
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column(); 
-
-ALTER TABLE crimes
-   ADD COLUMN address_number VARCHAR(50),
-   ADD COLUMN city VARCHAR(100),
-   ADD COLUMN province VARCHAR(100),
-   ADD COLUMN country VARCHAR(100),
-   ADD COLUMN zip_code VARCHAR(20);
+    EXECUTE FUNCTION update_updated_at_column();

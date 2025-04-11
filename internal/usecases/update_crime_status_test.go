@@ -7,6 +7,7 @@ import (
 
 	"go-crime_map_backend/internal/domain/entities"
 	"go-crime_map_backend/internal/domain/repositories"
+	"go-crime_map_backend/internal/domain/usecases"
 	"go-crime_map_backend/internal/mocks"
 
 	"github.com/stretchr/testify/assert"
@@ -60,15 +61,15 @@ func TestUpdateCrimeStatusUseCase_Execute(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		input         UpdateCrimeStatusInput
+		input         usecases.UpdateCrimeStatusInput
 		mockSetup     func()
 		expectedError error
 	}{
 		{
 			name: "Actualizar estado de activo a inactivo",
-			input: UpdateCrimeStatusInput{
-				ID:        "1",
-				NewStatus: string(entities.CrimeStatusInactive),
+			input: usecases.UpdateCrimeStatusInput{
+				ID:     "1",
+				Status: string(entities.CrimeStatusInactive),
 			},
 			mockSetup: func() {
 				mockRepo.On("GetByID", ctx, "1").Return(activeCrime, nil)
@@ -80,9 +81,9 @@ func TestUpdateCrimeStatusUseCase_Execute(t *testing.T) {
 		},
 		{
 			name: "Actualizar estado de inactivo a activo",
-			input: UpdateCrimeStatusInput{
-				ID:        "2",
-				NewStatus: string(entities.CrimeStatusActive),
+			input: usecases.UpdateCrimeStatusInput{
+				ID:     "2",
+				Status: string(entities.CrimeStatusActive),
 			},
 			mockSetup: func() {
 				mockRepo.On("GetByID", ctx, "2").Return(inactiveCrime, nil)
@@ -94,9 +95,9 @@ func TestUpdateCrimeStatusUseCase_Execute(t *testing.T) {
 		},
 		{
 			name: "Error al intentar actualizar un delito eliminado",
-			input: UpdateCrimeStatusInput{
-				ID:        "3",
-				NewStatus: string(entities.CrimeStatusActive),
+			input: usecases.UpdateCrimeStatusInput{
+				ID:     "3",
+				Status: string(entities.CrimeStatusActive),
 			},
 			mockSetup: func() {
 				mockRepo.On("GetByID", ctx, "3").Return(deletedCrime, nil)
@@ -105,9 +106,9 @@ func TestUpdateCrimeStatusUseCase_Execute(t *testing.T) {
 		},
 		{
 			name: "Error al intentar cambiar a estado eliminado",
-			input: UpdateCrimeStatusInput{
-				ID:        "1",
-				NewStatus: string(entities.CrimeStatusDeleted),
+			input: usecases.UpdateCrimeStatusInput{
+				ID:     "1",
+				Status: string(entities.CrimeStatusDeleted),
 			},
 			mockSetup: func() {
 				mockRepo.On("GetByID", ctx, "1").Return(activeCrime, nil)
@@ -116,9 +117,9 @@ func TestUpdateCrimeStatusUseCase_Execute(t *testing.T) {
 		},
 		{
 			name: "Error al intentar cambiar a estado inválido",
-			input: UpdateCrimeStatusInput{
-				ID:        "1",
-				NewStatus: "INVALID_STATUS",
+			input: usecases.UpdateCrimeStatusInput{
+				ID:     "1",
+				Status: "INVALID_STATUS",
 			},
 			mockSetup: func() {
 				mockRepo.On("GetByID", ctx, "1").Return(activeCrime, nil)
@@ -127,9 +128,9 @@ func TestUpdateCrimeStatusUseCase_Execute(t *testing.T) {
 		},
 		{
 			name: "Error al no encontrar el delito",
-			input: UpdateCrimeStatusInput{
-				ID:        "4",
-				NewStatus: string(entities.CrimeStatusInactive),
+			input: usecases.UpdateCrimeStatusInput{
+				ID:     "4",
+				Status: string(entities.CrimeStatusInactive),
 			},
 			mockSetup: func() {
 				mockRepo.On("GetByID", ctx, "4").Return(nil, repositories.ErrNotFound)

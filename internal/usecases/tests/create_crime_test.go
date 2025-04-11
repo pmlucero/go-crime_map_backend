@@ -9,6 +9,7 @@ import (
 	domain_usecases "go-crime_map_backend/internal/domain/usecases"
 	"go-crime_map_backend/internal/mocks"
 	"go-crime_map_backend/internal/usecases"
+	"go-crime_map_backend/internal/utils"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -79,12 +80,17 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 		{
 			name: "creación exitosa de delito",
 			input: domain_usecases.CreateCrimeInput{
-				Title:       "Robo a mano armada",
-				Type:        "ROBO",
-				Description: "Robo a mano armada en comercio",
-				Latitude:    -34.603722,
-				Longitude:   -58.381592,
-				Address:     "Av. Corrientes 1234",
+				Title:         "Test Crime",
+				Description:   "Test Description",
+				Type:          "ROBO",
+				Latitude:      -34.603722,
+				Longitude:     -58.381592,
+				Address:       "Av. Corrientes",
+				AddressNumber: utils.StringPtr("1234"),
+				City:          utils.StringPtr("Buenos Aires"),
+				Province:      utils.StringPtr("Buenos Aires"),
+				Country:       utils.StringPtr("Argentina"),
+				ZipCode:       utils.StringPtr("1042"),
 			},
 			setupMock: func() {
 				mockRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.Crime")).Return(nil)
@@ -93,58 +99,83 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 		{
 			name: "error - tipo de delito vacío",
 			input: domain_usecases.CreateCrimeInput{
-				Title:       "Robo a mano armada",
-				Description: "Robo a mano armada en comercio",
-				Latitude:    -34.603722,
-				Longitude:   -58.381592,
-				Address:     "Av. Corrientes 1234",
+				Title:         "Robo a mano armada",
+				Description:   "Robo a mano armada en comercio",
+				Latitude:      -34.603722,
+				Longitude:     -58.381592,
+				Address:       "Av. Corrientes",
+				AddressNumber: utils.StringPtr("1234"),
+				City:          utils.StringPtr("Buenos Aires"),
+				Province:      utils.StringPtr("Buenos Aires"),
+				Country:       utils.StringPtr("Argentina"),
+				ZipCode:       utils.StringPtr("1042"),
 			},
 			expectedError: "el tipo es requerido",
 		},
 		{
 			name: "error - descripción vacía",
 			input: domain_usecases.CreateCrimeInput{
-				Title:     "Robo a mano armada",
-				Type:      "ROBO",
-				Latitude:  -34.603722,
-				Longitude: -58.381592,
-				Address:   "Av. Corrientes 1234",
+				Title:         "Robo a mano armada",
+				Type:          "ROBO",
+				Latitude:      -34.603722,
+				Longitude:     -58.381592,
+				Address:       "Av. Corrientes",
+				AddressNumber: utils.StringPtr("1234"),
+				City:          utils.StringPtr("Buenos Aires"),
+				Province:      utils.StringPtr("Buenos Aires"),
+				Country:       utils.StringPtr("Argentina"),
+				ZipCode:       utils.StringPtr("1042"),
 			},
 			expectedError: "la descripción es requerida",
 		},
 		{
 			name: "error - latitud inválida",
 			input: domain_usecases.CreateCrimeInput{
-				Title:       "Robo a mano armada",
-				Type:        "ROBO",
-				Description: "Robo a mano armada en comercio",
-				Latitude:    91.0,
-				Longitude:   -58.381592,
-				Address:     "Av. Corrientes 1234",
+				Title:         "Robo a mano armada",
+				Type:          "ROBO",
+				Description:   "Robo a mano armada en comercio",
+				Latitude:      91.0,
+				Longitude:     -58.381592,
+				Address:       "Av. Corrientes",
+				AddressNumber: utils.StringPtr("1234"),
+				City:          utils.StringPtr("Buenos Aires"),
+				Province:      utils.StringPtr("Buenos Aires"),
+				Country:       utils.StringPtr("Argentina"),
+				ZipCode:       utils.StringPtr("1042"),
 			},
 			expectedError: "la latitud debe estar entre -90 y 90",
 		},
 		{
 			name: "error - longitud inválida",
 			input: domain_usecases.CreateCrimeInput{
-				Title:       "Robo a mano armada",
-				Type:        "ROBO",
-				Description: "Robo a mano armada en comercio",
-				Latitude:    -34.603722,
-				Longitude:   181.0,
-				Address:     "Av. Corrientes 1234",
+				Title:         "Robo a mano armada",
+				Type:          "ROBO",
+				Description:   "Robo a mano armada en comercio",
+				Latitude:      -34.603722,
+				Longitude:     181.0,
+				Address:       "Av. Corrientes",
+				AddressNumber: utils.StringPtr("1234"),
+				City:          utils.StringPtr("Buenos Aires"),
+				Province:      utils.StringPtr("Buenos Aires"),
+				Country:       utils.StringPtr("Argentina"),
+				ZipCode:       utils.StringPtr("1042"),
 			},
 			expectedError: "la longitud debe estar entre -180 y 180",
 		},
 		{
 			name: "error - fallo en el repositorio",
 			input: domain_usecases.CreateCrimeInput{
-				Title:       "Robo a mano armada",
-				Type:        "ROBO",
-				Description: "Robo a mano armada en comercio",
-				Latitude:    -34.603722,
-				Longitude:   -58.381592,
-				Address:     "Av. Corrientes 1234",
+				Title:         "Robo a mano armada",
+				Type:          "ROBO",
+				Description:   "Robo a mano armada en comercio",
+				Latitude:      -34.603722,
+				Longitude:     -58.381592,
+				Address:       "Av. Corrientes",
+				AddressNumber: utils.StringPtr("1234"),
+				City:          utils.StringPtr("Buenos Aires"),
+				Province:      utils.StringPtr("Buenos Aires"),
+				Country:       utils.StringPtr("Argentina"),
+				ZipCode:       utils.StringPtr("1042"),
 			},
 			expectedError: "error al crear el delito: assert.AnError general error for testing",
 			setupMock: func() {
@@ -174,11 +205,16 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 			assert.NotNil(t, result)
 			assert.NotEmpty(t, result.ID)
 			assert.Equal(t, tt.input.Title, result.Title)
-			assert.Equal(t, tt.input.Type, result.Type)
 			assert.Equal(t, tt.input.Description, result.Description)
+			assert.Equal(t, tt.input.Type, result.Type)
 			assert.Equal(t, tt.input.Latitude, result.Location.Latitude)
 			assert.Equal(t, tt.input.Longitude, result.Location.Longitude)
 			assert.Equal(t, tt.input.Address, result.Location.Address)
+			assert.Equal(t, tt.input.AddressNumber, result.Location.AddressNumber)
+			assert.Equal(t, tt.input.City, result.Location.City)
+			assert.Equal(t, tt.input.Province, result.Location.Province)
+			assert.Equal(t, tt.input.Country, result.Location.Country)
+			assert.Equal(t, tt.input.ZipCode, result.Location.ZipCode)
 			assert.Equal(t, string(entities.CrimeStatusActive), result.Status)
 
 			mockRepo.AssertExpectations(t)

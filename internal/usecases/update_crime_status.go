@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"go-crime_map_backend/internal/domain/entities"
 	"go-crime_map_backend/internal/domain/repositories"
 	"go-crime_map_backend/internal/domain/usecases"
 )
@@ -39,11 +40,24 @@ func (uc *UpdateCrimeStatusUseCase) Execute(ctx context.Context, input usecases.
 	// Obtener el delito del repositorio
 	crime, err := uc.crimeRepository.GetByID(ctx, input.ID)
 	if err != nil {
+		if err == repositories.ErrNotFound {
+			return err
+		}
 		return fmt.Errorf("error al obtener el delito: %w", err)
 	}
 
 	if crime == nil {
-		return fmt.Errorf("delito no encontrado")
+		return repositories.ErrNotFound
+	}
+
+	// Validar que el delito no esté eliminado
+	if crime.Status == string(entities.CrimeStatusDeleted) {
+		return ErrCrimeAlreadyDeleted
+	}
+
+	// Validar que el nuevo estado sea válido
+	if input.Status != string(entities.CrimeStatusActive) && input.Status != string(entities.CrimeStatusInactive) {
+		return ErrInvalidStatusTransition
 	}
 
 	// Actualizar el estado

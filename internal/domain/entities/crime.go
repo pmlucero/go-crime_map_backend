@@ -14,29 +14,29 @@ const (
 	CrimeStatusDeleted CrimeStatus = "DELETED"
 )
 
-// Crime representa un delito reportado en el sistema
+// Crime representa un delito
 type Crime struct {
-	ID          string     `json:"id"`
-	Title       string     `json:"title"`
-	Description string     `json:"description"`
-	Type        string     `json:"type"`
-	Status      string     `json:"status"`
+	ID          string     `json:"id" db:"id"`
+	Title       string     `json:"title" db:"title"`
+	Description string     `json:"description" db:"description"`
+	Type        string     `json:"type" db:"crime_type"`
+	Status      string     `json:"status" db:"status"`
 	Location    Location   `json:"location"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
-	DeletedAt   *time.Time `json:"deleted_at,omitempty"`
+	CreatedAt   time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at" db:"updated_at"`
+	DeletedAt   *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
 }
 
 // Location representa la ubicación geográfica de un delito
 type Location struct {
-	Latitude      float64 `json:"latitude"`       // Latitud
-	Longitude     float64 `json:"longitude"`      // Longitud
-	Address       string  `json:"address"`        // Dirección descriptiva
-	AddressNumber string  `json:"address_number"` // Número de la dirección
-	City          string  `json:"city"`           // Ciudad
-	Province      string  `json:"province"`       // Provincia
-	Country       string  `json:"country"`        // País
-	ZipCode       string  `json:"zip_code"`       // Código postal
+	Latitude      float64 `json:"latitude" db:"latitude"`
+	Longitude     float64 `json:"longitude" db:"longitude"`
+	Address       string  `json:"address" db:"address"`
+	AddressNumber *string `json:"address_number,omitempty" db:"address_number"`
+	City          *string `json:"city,omitempty" db:"city"`
+	Province      *string `json:"province,omitempty" db:"province"`
+	Country       *string `json:"country,omitempty" db:"country"`
+	ZipCode       *string `json:"zip_code,omitempty" db:"zip_code"`
 }
 
 // CrimeList representa una lista paginada de delitos

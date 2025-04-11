@@ -55,6 +55,16 @@ func CleanupTestDB(t *testing.T) {
 // createTables crea las tablas necesarias para las pruebas
 func createTables(db *sqlx.DB) error {
 	queries := []string{
+		`DROP TRIGGER IF EXISTS update_crimes_updated_at ON crimes`,
+		`DROP FUNCTION IF EXISTS update_updated_at_column()`,
+		`DROP TABLE IF EXISTS crimes CASCADE`,
+		`CREATE OR REPLACE FUNCTION update_updated_at_column()
+		RETURNS TRIGGER AS $$
+		BEGIN
+			NEW.updated_at = CURRENT_TIMESTAMP;
+			RETURN NEW;
+		END;
+		$$ language 'plpgsql'`,
 		`CREATE TABLE IF NOT EXISTS crimes (
 			id VARCHAR(36) PRIMARY KEY,
 			title VARCHAR(255) NOT NULL,
@@ -64,6 +74,11 @@ func createTables(db *sqlx.DB) error {
 			latitude DOUBLE PRECISION NOT NULL,
 			longitude DOUBLE PRECISION NOT NULL,
 			address TEXT NOT NULL,
+			address_number VARCHAR(50),
+			city VARCHAR(100),
+			province VARCHAR(100),
+			country VARCHAR(100),
+			zip_code VARCHAR(20),
 			created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			deleted_at TIMESTAMP WITH TIME ZONE

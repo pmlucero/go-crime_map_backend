@@ -47,11 +47,11 @@ type CreateCrimeRequest struct {
 	Latitude      float64 `json:"latitude" binding:"required" example:"-34.603722"`
 	Longitude     float64 `json:"longitude" binding:"required" example:"-58.381592"`
 	Address       string  `json:"address" binding:"required" example:"Av. Corrientes"`
-	AddressNumber string  `json:"address_number" binding:"required" example:"1234"`
-	City          string  `json:"city" binding:"required" example:"Buenos Aires"`
-	Province      string  `json:"province" binding:"required" example:"Buenos Aires"`
-	Country       string  `json:"country" binding:"required" example:"Argentina"`
-	ZipCode       string  `json:"zip_code" binding:"required" example:"1000"`
+	AddressNumber *string `json:"address_number" binding:"required" example:"1234"`
+	City          *string `json:"city" binding:"required" example:"Buenos Aires"`
+	Province      *string `json:"province" binding:"required" example:"Buenos Aires"`
+	Country       *string `json:"country" binding:"required" example:"Argentina"`
+	ZipCode       *string `json:"zip_code" binding:"required" example:"1000"`
 }
 
 // @Summary      Crear un nuevo delito

@@ -6,13 +6,16 @@ import (
 	"time"
 
 	"go-crime_map_backend/internal/domain/entities"
+	"go-crime_map_backend/internal/domain/usecases"
+	"go-crime_map_backend/internal/mocks"
+	"go-crime_map_backend/internal/utils"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestListCrimesUseCase_Execute(t *testing.T) {
 	// Crear mock del repositorio
-	mockRepo := new(MockCrimeRepository)
+	mockRepo := new(mocks.MockCrimeRepository)
 	useCase := NewListCrimesUseCase(mockRepo)
 
 	// Crear contexto
@@ -22,88 +25,82 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 	crimes := []entities.Crime{
 		{
 			ID:          "1",
+			Title:       "Robo de auto",
+			Description: "Me robaron el auto estacionado",
 			Type:        "ROBO",
-			Description: "Robo a mano armada",
+			Status:      "ACTIVE",
 			Location: entities.Location{
-				Latitude:  -34.603722,
-				Longitude: -58.381592,
+				Latitude:      -34.603722,
+				Longitude:     -58.381592,
+				Address:       "Av. 9 de Julio",
+				AddressNumber: utils.StringPtr("1000"),
+				City:          utils.StringPtr("Buenos Aires"),
+				Province:      utils.StringPtr("CABA"),
+				Country:       utils.StringPtr("Argentina"),
+				ZipCode:       utils.StringPtr("C1043"),
 			},
-			Status:    "ACTIVO",
-			CreatedAt: time.Now(),
 		},
 		{
 			ID:          "2",
-			Type:        "ASALTO",
-			Description: "Asalto a comercio",
+			Title:       "Robo de moto",
+			Description: "Me robaron la moto estacionada",
+			Type:        "ROBO",
+			Status:      "ACTIVE",
 			Location: entities.Location{
-				Latitude:  -34.608722,
-				Longitude: -58.382592,
+				Latitude:      -34.603722,
+				Longitude:     -58.381592,
+				Address:       "Av. Corrientes",
+				AddressNumber: utils.StringPtr("2000"),
+				City:          utils.StringPtr("Buenos Aires"),
+				Province:      utils.StringPtr("CABA"),
+				Country:       utils.StringPtr("Argentina"),
+				ZipCode:       utils.StringPtr("C1043"),
 			},
-			Status:    "RESUELTO",
-			CreatedAt: time.Now(),
 		},
 	}
 
 	tests := []struct {
 		name          string
-		input         ListCrimesParams
+		input         usecases.ListCrimesParams
 		mockSetup     func()
 		expectedError error
 		expectedCount int
 	}{
 		{
 			name: "Listar todos los delitos",
-			input: ListCrimesParams{
+			input: usecases.ListCrimesParams{
 				Page:  1,
 				Limit: 10,
 			},
 			mockSetup: func() {
-				mockRepo.On("List", ctx, 1, 10, (*time.Time)(nil), (*time.Time)(nil), (*string)(nil), (*string)(nil)).Return(crimes, int64(2), nil)
+				mockRepo.On("List", ctx, 1, 10).Return(crimes, int64(2), nil)
 			},
 			expectedError: nil,
 			expectedCount: 2,
 		},
 		{
-			name: "Listar delitos por tipo",
-			input: ListCrimesParams{
+			name: "Listar delitos con límite personalizado",
+			input: usecases.ListCrimesParams{
 				Page:  1,
-				Limit: 10,
-				Type:  stringPtr("ROBO"),
+				Limit: 5,
 			},
 			mockSetup: func() {
-				crimeType := "ROBO"
-				mockRepo.On("List", ctx, 1, 10, (*time.Time)(nil), (*time.Time)(nil), &crimeType, (*string)(nil)).Return([]entities.Crime{crimes[0]}, int64(1), nil)
+				mockRepo.On("List", ctx, 1, 5).Return(crimes[:1], int64(1), nil)
 			},
 			expectedError: nil,
 			expectedCount: 1,
 		},
 		{
-			name: "Listar delitos por rango de fechas",
-			input: ListCrimesParams{
-				Page:      1,
-				Limit:     10,
-				StartDate: timePtr(time.Now().Add(-24 * time.Hour)),
-				EndDate:   timePtr(time.Now()),
+			name: "Listar delitos con página personalizada",
+			input: usecases.ListCrimesParams{
+				Page:  2,
+				Limit: 1,
 			},
 			mockSetup: func() {
-				startDate := time.Now().Add(-24 * time.Hour)
-				endDate := time.Now()
-				mockRepo.On("List", ctx, 1, 10, &startDate, &endDate, (*string)(nil), (*string)(nil)).Return(crimes, int64(2), nil)
+				mockRepo.On("List", ctx, 2, 1).Return(crimes[1:], int64(1), nil)
 			},
 			expectedError: nil,
-			expectedCount: 2,
-		},
-		{
-			name: "Error en rango de fechas inválido",
-			input: ListCrimesParams{
-				Page:      1,
-				Limit:     10,
-				StartDate: timePtr(time.Now()),
-				EndDate:   timePtr(time.Now().Add(-24 * time.Hour)),
-			},
-			mockSetup:     func() {},
-			expectedError: ErrInvalidDateRange,
-			expectedCount: 0,
+			expectedCount: 1,
 		},
 	}
 
@@ -125,7 +122,7 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.NotNil(t, result)
-			assert.Equal(t, tt.expectedCount, len(result.Crimes))
+			assert.Equal(t, tt.expectedCount, len(result.Items))
 			assert.Equal(t, int64(tt.expectedCount), result.Total)
 
 			// Verificar que se llamó al mock

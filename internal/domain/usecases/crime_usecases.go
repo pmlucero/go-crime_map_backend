@@ -14,11 +14,11 @@ type CreateCrimeInput struct {
 	Latitude      float64
 	Longitude     float64
 	Address       string
-	AddressNumber string
-	City          string
-	Province      string
-	Country       string
-	ZipCode       string
+	AddressNumber *string
+	City          *string
+	Province      *string
+	Country       *string
+	ZipCode       *string
 }
 
 // CreateCrimeUseCase define la interfaz para crear delitos
