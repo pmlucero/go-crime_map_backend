@@ -60,6 +60,9 @@ El servidor estará disponible en `http://localhost:8080`
 
 - `GET /health`: Verificar el estado del servidor
 
+## Validaciones de Código
+Este proyecto utiliza pre-commit hooks y GitHub Actions para mantener la calidad del código.
+
 ## Licencia
 
 Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
