@@ -4,17 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"go-crime_map_backend/internal/domain/entities"
 	"go-crime_map_backend/internal/domain/usecases"
 	"go-crime_map_backend/internal/interface/controllers"
-	"go-crime_map_backend/internal/mocks"
+	"go-crime_map_backend/internal/utils"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -37,12 +38,12 @@ type MockListCrimesUseCase struct {
 	mock.Mock
 }
 
-func (m *MockListCrimesUseCase) Execute(ctx context.Context, input usecases.ListCrimesInput) ([]entities.Crime, error) {
-	args := m.Called(ctx, input)
+func (m *MockListCrimesUseCase) Execute(ctx context.Context, params usecases.ListCrimesParams) (*entities.CrimeList, error) {
+	args := m.Called(ctx, params)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]entities.Crime), args.Error(1)
+	return args.Get(0).(*entities.CrimeList), args.Error(1)
 }
 
 // MockUpdateCrimeStatusUseCase es un mock para el caso de uso de actualización de estado
@@ -70,12 +71,25 @@ type MockGetCrimeStatsUseCase struct {
 	mock.Mock
 }
 
-func (m *MockGetCrimeStatsUseCase) Execute(ctx context.Context, input usecases.GetCrimeStatsInput) (*entities.CrimeStats, error) {
-	args := m.Called(ctx, input)
+func (m *MockGetCrimeStatsUseCase) Execute(ctx context.Context) (*entities.CrimeStats, error) {
+	args := m.Called(ctx)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*entities.CrimeStats), args.Error(1)
+}
+
+// MockGetCrimeUseCase es un mock para el caso de uso de obtención de un delito
+type MockGetCrimeUseCase struct {
+	mock.Mock
+}
+
+func (m *MockGetCrimeUseCase) Execute(ctx context.Context, id string) (*entities.Crime, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entities.Crime), args.Error(1)
 }
 
 func setupTestRouter() *gin.Engine {
@@ -85,13 +99,12 @@ func setupTestRouter() *gin.Engine {
 
 func TestCreateCrime(t *testing.T) {
 	router := setupTestRouter()
-
-	mockCreateUseCase := new(mocks.MockCreateCrimeUseCase)
-	mockListUseCase := new(mocks.MockListCrimesUseCase)
-	mockUpdateStatusUseCase := new(mocks.MockUpdateCrimeStatusUseCase)
-	mockDeleteUseCase := new(mocks.MockDeleteCrimeUseCase)
-	mockGetStatsUseCase := new(mocks.MockGetCrimeStatsUseCase)
-	mockGetCrimeUseCase := new(mocks.MockGetCrimeUseCase)
+	mockCreateUseCase := new(MockCreateCrimeUseCase)
+	mockListUseCase := new(MockListCrimesUseCase)
+	mockUpdateStatusUseCase := new(MockUpdateCrimeStatusUseCase)
+	mockDeleteUseCase := new(MockDeleteCrimeUseCase)
+	mockGetStatsUseCase := new(MockGetCrimeStatsUseCase)
+	mockGetCrimeUseCase := new(MockGetCrimeUseCase)
 
 	controller := controllers.NewCrimeController(
 		mockCreateUseCase,
@@ -103,6 +116,13 @@ func TestCreateCrime(t *testing.T) {
 	)
 
 	router.POST("/crimes", controller.CreateCrime)
+
+	// Crear variables para los campos opcionales
+	addressNumber := "1234"
+	city := "Buenos Aires"
+	province := "Buenos Aires"
+	country := "Argentina"
+	zipCode := "1000"
 
 	tests := []struct {
 		name           string
@@ -120,11 +140,11 @@ func TestCreateCrime(t *testing.T) {
 				Latitude:      -34.603722,
 				Longitude:     -58.381592,
 				Address:       "Av. Corrientes",
-				AddressNumber: "1234",
-				City:          "Buenos Aires",
-				Province:      "Buenos Aires",
-				Country:       "Argentina",
-				ZipCode:       "1000",
+				AddressNumber: utils.StringPtr(addressNumber),
+				City:          utils.StringPtr(city),
+				Province:      utils.StringPtr(province),
+				Country:       utils.StringPtr(country),
+				ZipCode:       utils.StringPtr(zipCode),
 			},
 			mockSetup: func() {
 				mockCreateUseCase.On("Execute", mock.Anything, usecases.CreateCrimeInput{
@@ -134,11 +154,11 @@ func TestCreateCrime(t *testing.T) {
 					Latitude:      -34.603722,
 					Longitude:     -58.381592,
 					Address:       "Av. Corrientes",
-					AddressNumber: "1234",
-					City:          "Buenos Aires",
-					Province:      "Buenos Aires",
-					Country:       "Argentina",
-					ZipCode:       "1000",
+					AddressNumber: utils.StringPtr(addressNumber),
+					City:          utils.StringPtr(city),
+					Province:      utils.StringPtr(province),
+					Country:       utils.StringPtr(country),
+					ZipCode:       utils.StringPtr(zipCode),
 				}).Return(
 					&entities.Crime{
 						ID:          "123",
@@ -150,11 +170,11 @@ func TestCreateCrime(t *testing.T) {
 							Latitude:      -34.603722,
 							Longitude:     -58.381592,
 							Address:       "Av. Corrientes",
-							AddressNumber: "1234",
-							City:          "Buenos Aires",
-							Province:      "Buenos Aires",
-							Country:       "Argentina",
-							ZipCode:       "1000",
+							AddressNumber: utils.StringPtr(addressNumber),
+							City:          utils.StringPtr(city),
+							Province:      utils.StringPtr(province),
+							Country:       utils.StringPtr(country),
+							ZipCode:       utils.StringPtr(zipCode),
 						},
 					}, nil)
 			},
@@ -169,15 +189,15 @@ func TestCreateCrime(t *testing.T) {
 				Latitude:      0,
 				Longitude:     0,
 				Address:       "",
-				AddressNumber: "",
-				City:          "",
-				Province:      "",
-				Country:       "",
-				ZipCode:       "",
+				AddressNumber: nil,
+				City:          nil,
+				Province:      nil,
+				Country:       nil,
+				ZipCode:       nil,
 			},
 			mockSetup:      func() {},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "error de validación",
+			expectedError:  "Key: 'CreateCrimeRequest.Title' Error:Field validation for 'Title' failed on the 'required' tag",
 		},
 	}
 
@@ -203,13 +223,12 @@ func TestCreateCrime(t *testing.T) {
 
 func TestListCrimes(t *testing.T) {
 	router := setupTestRouter()
-
-	mockCreateUseCase := new(mocks.MockCreateCrimeUseCase)
-	mockListUseCase := new(mocks.MockListCrimesUseCase)
-	mockUpdateStatusUseCase := new(mocks.MockUpdateCrimeStatusUseCase)
-	mockDeleteUseCase := new(mocks.MockDeleteCrimeUseCase)
-	mockGetStatsUseCase := new(mocks.MockGetCrimeStatsUseCase)
-	mockGetCrimeUseCase := new(mocks.MockGetCrimeUseCase)
+	mockCreateUseCase := new(MockCreateCrimeUseCase)
+	mockListUseCase := new(MockListCrimesUseCase)
+	mockUpdateStatusUseCase := new(MockUpdateCrimeStatusUseCase)
+	mockDeleteUseCase := new(MockDeleteCrimeUseCase)
+	mockGetStatsUseCase := new(MockGetCrimeStatsUseCase)
+	mockGetCrimeUseCase := new(MockGetCrimeUseCase)
 
 	controller := controllers.NewCrimeController(
 		mockCreateUseCase,
@@ -248,11 +267,11 @@ func TestListCrimes(t *testing.T) {
 									Latitude:      -34.603722,
 									Longitude:     -58.381592,
 									Address:       "Av. Corrientes",
-									AddressNumber: "1234",
-									City:          "Buenos Aires",
-									Province:      "Buenos Aires",
-									Country:       "Argentina",
-									ZipCode:       "1000",
+									AddressNumber: utils.StringPtr("1234"),
+									City:          utils.StringPtr("Buenos Aires"),
+									Province:      utils.StringPtr("Buenos Aires"),
+									Country:       utils.StringPtr("Argentina"),
+									ZipCode:       utils.StringPtr("1000"),
 								},
 							},
 						},
@@ -282,6 +301,7 @@ func TestUpdateCrimeStatus(t *testing.T) {
 	mockUpdateStatusUseCase := new(MockUpdateCrimeStatusUseCase)
 	mockDeleteUseCase := new(MockDeleteCrimeUseCase)
 	mockGetStatsUseCase := new(MockGetCrimeStatsUseCase)
+	mockGetCrimeUseCase := new(MockGetCrimeUseCase)
 
 	controller := controllers.NewCrimeController(
 		mockCreateUseCase,
@@ -289,91 +309,76 @@ func TestUpdateCrimeStatus(t *testing.T) {
 		mockUpdateStatusUseCase,
 		mockDeleteUseCase,
 		mockGetStatsUseCase,
+		mockGetCrimeUseCase,
 	)
 
 	router.PATCH("/crimes/:id/status", controller.UpdateCrimeStatus)
 
 	tests := []struct {
 		name           string
-		id             string
-		payload        controllers.UpdateStatusRequest
+		crimeID        string
+		input          controllers.UpdateStatusRequest
 		mockSetup      func()
 		expectedStatus int
 		expectedError  string
 	}{
 		{
-			name: "actualizar estado exitosamente",
-			id:   uuid.New().String(),
-			payload: controllers.UpdateStatusRequest{
-				Status: string(entities.CrimeStatusInactive),
+			name:    "actualizar estado exitosamente",
+			crimeID: "123",
+			input: controllers.UpdateStatusRequest{
+				Status: "INACTIVE",
 			},
 			mockSetup: func() {
-				mockUpdateStatusUseCase.On("Execute", mock.Anything, mock.Anything).Return(nil)
+				mockUpdateStatusUseCase.On("Execute", mock.Anything, usecases.UpdateCrimeStatusInput{
+					ID:     "123",
+					Status: "INACTIVE",
+				}).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "error - ID no proporcionado",
-			id:   "",
-			payload: controllers.UpdateStatusRequest{
-				Status: string(entities.CrimeStatusInactive),
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  "ID no proporcionado",
-		},
-		{
-			name: "error - estado inválido",
-			id:   uuid.New().String(),
-			payload: controllers.UpdateStatusRequest{
-				Status: "INVALID_STATUS",
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  "estado inválido",
-		},
-		{
-			name: "error - delito no encontrado",
-			id:   uuid.New().String(),
-			payload: controllers.UpdateStatusRequest{
-				Status: string(entities.CrimeStatusInactive),
+			name:    "error - delito no encontrado",
+			crimeID: "456",
+			input: controllers.UpdateStatusRequest{
+				Status: "INACTIVE",
 			},
 			mockSetup: func() {
-				mockUpdateStatusUseCase.On("Execute", mock.Anything, mock.Anything).Return(usecases.ErrCrimeNotFound)
+				mockUpdateStatusUseCase.On("Execute", mock.Anything, usecases.UpdateCrimeStatusInput{
+					ID:     "456",
+					Status: "INACTIVE",
+				}).Return(fmt.Errorf("delito no encontrado"))
 			},
-			expectedStatus: http.StatusNotFound,
-			expectedError:  "el delito no existe",
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  "delito no encontrado",
 		},
 		{
-			name: "error - delito ya eliminado",
-			id:   uuid.New().String(),
-			payload: controllers.UpdateStatusRequest{
-				Status: string(entities.CrimeStatusInactive),
+			name:    "error - delito ya eliminado",
+			crimeID: "789",
+			input: controllers.UpdateStatusRequest{
+				Status: "INACTIVE",
 			},
 			mockSetup: func() {
-				mockUpdateStatusUseCase.On("Execute", mock.Anything, mock.Anything).Return(usecases.ErrCrimeAlreadyDeleted)
+				mockUpdateStatusUseCase.On("Execute", mock.Anything, usecases.UpdateCrimeStatusInput{
+					ID:     "789",
+					Status: "INACTIVE",
+				}).Return(fmt.Errorf("el delito ya ha sido eliminado"))
 			},
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  "el delito ya fue eliminado",
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  "el delito ya ha sido eliminado",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Limpiar mocks antes de cada test
-			mockUpdateStatusUseCase.ExpectedCalls = nil
-			mockUpdateStatusUseCase.Calls = nil
+			tt.mockSetup()
 
-			if tt.mockSetup != nil {
-				tt.mockSetup()
-			}
-
-			payload, _ := json.Marshal(tt.payload)
-			req := httptest.NewRequest("PATCH", "/crimes/"+tt.id+"/status", bytes.NewBuffer(payload))
+			body, _ := json.Marshal(tt.input)
+			req := httptest.NewRequest("PATCH", "/crimes/"+tt.crimeID+"/status", bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
-
 			if tt.expectedError != "" {
 				var response controllers.ErrorResponse
 				err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -391,6 +396,7 @@ func TestDeleteCrime(t *testing.T) {
 	mockUpdateStatusUseCase := new(MockUpdateCrimeStatusUseCase)
 	mockDeleteUseCase := new(MockDeleteCrimeUseCase)
 	mockGetStatsUseCase := new(MockGetCrimeStatsUseCase)
+	mockGetCrimeUseCase := new(MockGetCrimeUseCase)
 
 	controller := controllers.NewCrimeController(
 		mockCreateUseCase,
@@ -398,71 +404,55 @@ func TestDeleteCrime(t *testing.T) {
 		mockUpdateStatusUseCase,
 		mockDeleteUseCase,
 		mockGetStatsUseCase,
+		mockGetCrimeUseCase,
 	)
 
-	crimes := router.Group("/crimes")
-	{
-		crimes.DELETE("", controller.DeleteCrime)
-		crimes.DELETE("/:id", controller.DeleteCrime)
-	}
+	router.DELETE("/crimes/:id", controller.DeleteCrime)
 
 	tests := []struct {
 		name           string
-		path           string
+		crimeID        string
 		mockSetup      func()
 		expectedStatus int
 		expectedError  string
 	}{
 		{
-			name: "eliminar delito exitosamente",
-			path: "/crimes/" + uuid.New().String(),
+			name:    "eliminar delito exitosamente",
+			crimeID: "123",
 			mockSetup: func() {
-				mockDeleteUseCase.On("Execute", mock.Anything, mock.Anything).Return(nil)
+				mockDeleteUseCase.On("Execute", mock.Anything, "123").Return(nil)
 			},
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "error - ID no proporcionado",
-			path:           "/crimes",
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  "ID no proporcionado",
+			name:    "error - delito no encontrado",
+			crimeID: "456",
+			mockSetup: func() {
+				mockDeleteUseCase.On("Execute", mock.Anything, "456").Return(fmt.Errorf("delito no encontrado"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  "delito no encontrado",
 		},
 		{
-			name: "error - delito no encontrado",
-			path: "/crimes/" + uuid.New().String(),
+			name:    "error - delito ya eliminado",
+			crimeID: "789",
 			mockSetup: func() {
-				mockDeleteUseCase.On("Execute", mock.Anything, mock.Anything).Return(usecases.ErrCrimeNotFound)
+				mockDeleteUseCase.On("Execute", mock.Anything, "789").Return(fmt.Errorf("el delito ya ha sido eliminado"))
 			},
-			expectedStatus: http.StatusNotFound,
-			expectedError:  "el delito no existe",
-		},
-		{
-			name: "error - delito ya eliminado",
-			path: "/crimes/" + uuid.New().String(),
-			mockSetup: func() {
-				mockDeleteUseCase.On("Execute", mock.Anything, mock.Anything).Return(usecases.ErrCrimeAlreadyDeleted)
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  "el delito ya fue eliminado",
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  "el delito ya ha sido eliminado",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Limpiar mocks antes de cada test
-			mockDeleteUseCase.ExpectedCalls = nil
-			mockDeleteUseCase.Calls = nil
+			tt.mockSetup()
 
-			if tt.mockSetup != nil {
-				tt.mockSetup()
-			}
-
-			req := httptest.NewRequest("DELETE", tt.path, nil)
+			req := httptest.NewRequest("DELETE", "/crimes/"+tt.crimeID, nil)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
-
 			if tt.expectedError != "" {
 				var response controllers.ErrorResponse
 				err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -480,6 +470,7 @@ func TestGetCrimeStats(t *testing.T) {
 	mockUpdateStatusUseCase := new(MockUpdateCrimeStatusUseCase)
 	mockDeleteUseCase := new(MockDeleteCrimeUseCase)
 	mockGetStatsUseCase := new(MockGetCrimeStatsUseCase)
+	mockGetCrimeUseCase := new(MockGetCrimeUseCase)
 
 	controller := controllers.NewCrimeController(
 		mockCreateUseCase,
@@ -487,6 +478,7 @@ func TestGetCrimeStats(t *testing.T) {
 		mockUpdateStatusUseCase,
 		mockDeleteUseCase,
 		mockGetStatsUseCase,
+		mockGetCrimeUseCase,
 	)
 
 	router.GET("/crimes/stats", controller.GetCrimeStats)
@@ -495,56 +487,73 @@ func TestGetCrimeStats(t *testing.T) {
 		name           string
 		mockSetup      func()
 		expectedStatus int
-		expectedStats  *entities.CrimeStats
+		expectedError  string
 	}{
 		{
 			name: "obtener estadísticas exitosamente",
 			mockSetup: func() {
-				mockGetStatsUseCase.On("Execute", mock.Anything, mock.Anything).Return(
+				t.Log("Configurando mock para caso exitoso")
+				mockGetStatsUseCase.On("Execute", mock.Anything).Return(
 					&entities.CrimeStats{
 						TotalCrimes:      10,
-						ActiveCrimes:     8,
-						InactiveCrimes:   2,
-						CrimesByType:     map[string]int{"ROBO": 5, "ASALTO": 3, "OTRO": 2},
-						CrimesByStatus:   map[string]int{"ACTIVE": 8, "INACTIVE": 2},
-						CrimesByLocation: map[string]int{"NORTE": 4, "SUR": 3, "ESTE": 2, "OESTE": 1},
+						ActiveCrimes:     5,
+						InactiveCrimes:   3,
+						CrimesByType:     map[string]int64{"ROBO": 5, "ASALTO": 3, "HURTO": 2},
+						CrimesByStatus:   map[string]int64{"ACTIVO": 5, "INACTIVO": 3, "ELIMINADO": 2},
+						CrimesByLocation: map[string]int64{"CABA": 5, "GBA": 3, "INTERIOR": 2},
+						CrimesByAddress:  map[string]int64{"AV CORRIENTES": 5, "AV RIVADAVIA": 3, "AV CABILDO": 2},
+						LastUpdate:       time.Now(),
 					}, nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedStats: &entities.CrimeStats{
-				TotalCrimes:      10,
-				ActiveCrimes:     8,
-				InactiveCrimes:   2,
-				CrimesByType:     map[string]int{"ROBO": 5, "ASALTO": 3, "OTRO": 2},
-				CrimesByStatus:   map[string]int{"ACTIVE": 8, "INACTIVE": 2},
-				CrimesByLocation: map[string]int{"NORTE": 4, "SUR": 3, "ESTE": 2, "OESTE": 1},
+		},
+		{
+			name: "error al obtener estadísticas",
+			mockSetup: func() {
+				t.Log("Configurando mock para caso de error")
+				mockGetStatsUseCase.On("Execute", mock.Anything).Return(nil, fmt.Errorf("error al obtener estadísticas"))
 			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedError:  "error al obtener estadísticas",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.mockSetup != nil {
-				tt.mockSetup()
-			}
+			t.Logf("Iniciando test case: %s", tt.name)
+			// Limpiar las expectativas del mock antes de configurarlo
+			mockGetStatsUseCase.ExpectedCalls = nil
+			tt.mockSetup()
 
 			req := httptest.NewRequest("GET", "/crimes/stats", nil)
 			w := httptest.NewRecorder()
+			t.Log("Ejecutando request HTTP")
 			router.ServeHTTP(w, req)
 
+			t.Logf("Verificando código de estado HTTP. Esperado: %d, Obtenido: %d", tt.expectedStatus, w.Code)
 			assert.Equal(t, tt.expectedStatus, w.Code)
-
-			if tt.expectedStatus == http.StatusOK {
+			if tt.expectedError != "" {
+				t.Log("Verificando respuesta de error")
+				var response controllers.ErrorResponse
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				assert.NoError(t, err)
+				assert.Contains(t, response.Error, tt.expectedError)
+			} else {
+				t.Log("Verificando respuesta exitosa")
 				var response entities.CrimeStats
 				err := json.Unmarshal(w.Body.Bytes(), &response)
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedStats.TotalCrimes, response.TotalCrimes)
-				assert.Equal(t, tt.expectedStats.ActiveCrimes, response.ActiveCrimes)
-				assert.Equal(t, tt.expectedStats.InactiveCrimes, response.InactiveCrimes)
-				assert.Equal(t, tt.expectedStats.CrimesByType, response.CrimesByType)
-				assert.Equal(t, tt.expectedStats.CrimesByStatus, response.CrimesByStatus)
-				assert.Equal(t, tt.expectedStats.CrimesByLocation, response.CrimesByLocation)
+				assert.NotNil(t, response)
+				assert.Equal(t, int64(10), response.TotalCrimes)
+				assert.Equal(t, int64(5), response.ActiveCrimes)
+				assert.Equal(t, int64(3), response.InactiveCrimes)
+				assert.Equal(t, map[string]int64{"ROBO": 5, "ASALTO": 3, "HURTO": 2}, response.CrimesByType)
+				assert.Equal(t, map[string]int64{"ACTIVO": 5, "INACTIVO": 3, "ELIMINADO": 2}, response.CrimesByStatus)
+				assert.Equal(t, map[string]int64{"CABA": 5, "GBA": 3, "INTERIOR": 2}, response.CrimesByLocation)
+				assert.Equal(t, map[string]int64{"AV CORRIENTES": 5, "AV RIVADAVIA": 3, "AV CABILDO": 2}, response.CrimesByAddress)
+				assert.NotZero(t, response.LastUpdate)
 			}
+			t.Logf("Test case %s completado", tt.name)
 		})
 	}
 }
