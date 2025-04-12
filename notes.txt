@@ -38,3 +38,63 @@ Ej:
 Desde consola, cuando ejecuto el test en forma individual funciona correctamente:
 
 go test ./internal/interface/controllers/tests -v -run "^TestGetCrimeStats$/error_al_obtener_estadísticas"
+
+
+----------------------------
+
+Como actualizar el swagger?
+1. Instalar swag si no está instalado:
+   ```bash
+   go install github.com/swaggo/swag/cmd/swag@latest
+   ```
+
+2. Asegurarse de que swag está en el PATH:
+   ```bash
+   export PATH=$PATH:$(go env GOPATH)/bin
+   ```
+
+3. Desde la raíz del proyecto, ejecutar:
+   ```bash
+   swag init -g cmd/api/main.go
+   ```
+
+----------------------------
+Server: Run en modo desarrollo
+
+# Instrucciones para ejecutar el servidor en modo desarrollo
+
+1. Asegúrate de que la base de datos esté corriendo y sea accesible con las credenciales del archivo .env:
+   ```
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_USER=postgres
+   DB_PASSWORD=postgres
+   DB_NAME=crime_map
+   ```
+
+2. Ejecutar el servidor directamente (desde la raíz del proyecto):
+   ```bash
+   go run cmd/api/main.go
+   ```
+
+3. El servidor estará disponible en:
+   - API: http://localhost:8080
+   - Documentación Swagger: http://localhost:8080/swagger/index.html
+   - Endpoint de salud: http://localhost:8080/health
+
+4. Para probar que el servidor está funcionando:
+   ```bash
+   curl http://localhost:8080/health
+   ```
+
+Notas:
+- El servidor se ejecuta en modo debug por defecto
+- Los logs se muestran en la consola
+- Hot-reload: Para desarrollo, puedes usar air para recargar automáticamente:
+  ```bash
+  # Instalar air
+  go install github.com/cosmtrek/air@latest
+
+  # Ejecutar con air
+  air
+  ```
