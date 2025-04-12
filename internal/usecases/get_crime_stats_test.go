@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+// TestGetCrimeStatsUseCase_Execute verifica que las estadísticas
+// se obtengan correctamente del repositorio
 func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
 	// Crear mock del repositorio
 	mockRepo := new(mocks.MockCrimeRepository)
