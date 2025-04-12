@@ -19,6 +19,10 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 
 	ctx := context.Background()
 
+	now := time.Now()
+	startDate := now.Add(-24 * time.Hour)
+	endDate := now
+
 	crimes := []entities.Crime{
 		{
 			ID:          "1",
@@ -29,7 +33,7 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 				Longitude: -58.381592,
 			},
 			Status:    "ACTIVE",
-			CreatedAt: time.Now(),
+			CreatedAt: now,
 		},
 		{
 			ID:          "2",
@@ -40,7 +44,7 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 				Longitude: -58.382592,
 			},
 			Status:    "ACTIVE",
-			CreatedAt: time.Now(),
+			CreatedAt: now,
 		},
 	}
 
@@ -66,8 +70,10 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 		{
 			name: "Error en rango de fechas inválido",
 			input: domain_usecases.ListCrimesParams{
-				Page:  1,
-				Limit: 10,
+				Page:      1,
+				Limit:     10,
+				StartDate: &endDate,
+				EndDate:   &startDate,
 			},
 			mockSetup:     func() {},
 			expectedError: usecases.ErrInvalidDateRange,
@@ -77,6 +83,9 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Limpiar mock y configurar para este test
+			mockRepo.ExpectedCalls = nil
+			mockRepo.Calls = nil
 			tt.mockSetup()
 
 			result, err := useCase.Execute(ctx, tt.input)

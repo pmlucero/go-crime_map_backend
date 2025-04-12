@@ -29,28 +29,43 @@ func TestListCrimesUseCase_Integration(t *testing.T) {
 	// Crear varios delitos de prueba
 	crimes := []domain_usecases.CreateCrimeInput{
 		{
-			Title:       "Robo a mano armada",
-			Type:        "ROBO",
-			Description: "Robo a mano armada en comercio",
-			Latitude:    -34.603722,
-			Longitude:   -58.381592,
-			Address:     "Av. Corrientes 1234",
+			Title:         "Robo a mano armada",
+			Type:          "ROBO",
+			Description:   "Robo a mano armada en comercio",
+			Latitude:      -34.603722,
+			Longitude:     -58.381592,
+			Address:       "Av. Corrientes",
+			AddressNumber: strPtr("1234"),
+			City:          strPtr("Buenos Aires"),
+			Province:      strPtr("Buenos Aires"),
+			Country:       strPtr("Argentina"),
+			ZipCode:       strPtr("C1043"),
 		},
 		{
-			Title:       "Vandalismo",
-			Type:        "VANDALISMO",
-			Description: "Daños a propiedad pública",
-			Latitude:    -34.604722,
-			Longitude:   -58.382592,
-			Address:     "Av. Corrientes 2345",
+			Title:         "Vandalismo",
+			Type:          "VANDALISMO",
+			Description:   "Daños a propiedad pública",
+			Latitude:      -34.604722,
+			Longitude:     -58.382592,
+			Address:       "Av. Corrientes",
+			AddressNumber: strPtr("2345"),
+			City:          strPtr("Buenos Aires"),
+			Province:      strPtr("Buenos Aires"),
+			Country:       strPtr("Argentina"),
+			ZipCode:       strPtr("C1043"),
 		},
 		{
-			Title:       "Hurto",
-			Type:        "HURTO",
-			Description: "Hurto de celular",
-			Latitude:    -34.605722,
-			Longitude:   -58.383592,
-			Address:     "Av. Corrientes 3456",
+			Title:         "Hurto",
+			Type:          "HURTO",
+			Description:   "Hurto de celular",
+			Latitude:      -34.605722,
+			Longitude:     -58.383592,
+			Address:       "Av. Corrientes",
+			AddressNumber: strPtr("3456"),
+			City:          strPtr("Buenos Aires"),
+			Province:      strPtr("Buenos Aires"),
+			Country:       strPtr("Argentina"),
+			ZipCode:       strPtr("C1043"),
 		},
 	}
 
@@ -106,6 +121,8 @@ func TestListCrimesUseCase_Integration(t *testing.T) {
 				assert.NotZero(t, crime.Location.Latitude)
 				assert.NotZero(t, crime.Location.Longitude)
 				assert.NotEmpty(t, crime.Location.Address)
+				assert.NotNil(t, crime.Location.AddressNumber)
+				assert.NotEmpty(t, *crime.Location.AddressNumber)
 				assert.NotZero(t, crime.CreatedAt)
 				assert.NotZero(t, crime.UpdatedAt)
 			}

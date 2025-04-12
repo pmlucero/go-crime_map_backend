@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"context"
+	"time"
 
 	"go-crime_map_backend/internal/domain/entities"
 )
@@ -28,8 +29,12 @@ type CreateCrimeUseCase interface {
 
 // ListCrimesParams representa los parámetros para listar delitos
 type ListCrimesParams struct {
-	Page  int
-	Limit int
+	Page      int
+	Limit     int
+	StartDate *time.Time
+	EndDate   *time.Time
+	Type      *string
+	Status    *string
 }
 
 // ListCrimesUseCase define la interfaz para listar delitos

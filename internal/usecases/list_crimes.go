@@ -62,6 +62,13 @@ func (uc *ListCrimesUseCase) Execute(ctx context.Context, params usecases.ListCr
 		params.Limit = 100
 	}
 
+	// Validar rango de fechas
+	if params.StartDate != nil && params.EndDate != nil {
+		if params.StartDate.After(*params.EndDate) {
+			return nil, ErrInvalidDateRange
+		}
+	}
+
 	// Obtener delitos del repositorio
 	crimes, total, err := uc.crimeRepository.List(ctx, params.Page, params.Limit)
 	if err != nil {

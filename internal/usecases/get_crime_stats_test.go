@@ -3,6 +3,7 @@ package usecases
 import (
 	"context"
 	"testing"
+	"time"
 
 	"go-crime_map_backend/internal/domain/entities"
 	"go-crime_map_backend/internal/mocks"
@@ -37,6 +38,8 @@ func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
 			"NORTE":  30,
 			"SUR":    30,
 		},
+		CrimesByAddress: map[string]int64{},
+		LastUpdate:      time.Now(),
 	}
 
 	tests := []struct {
@@ -48,7 +51,7 @@ func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
 		{
 			name: "obtener estadísticas exitosamente",
 			mockSetup: func() {
-				mockRepo.On("GetStats", ctx).Return(stats, nil)
+				mockRepo.On("GetStats", ctx).Return(stats, nil).Once()
 			},
 			expectedStats: stats,
 			expectedError: nil,
@@ -56,7 +59,7 @@ func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
 		{
 			name: "error al obtener estadísticas",
 			mockSetup: func() {
-				mockRepo.On("GetStats", ctx).Return(nil, assert.AnError)
+				mockRepo.On("GetStats", ctx).Return(nil, assert.AnError).Once()
 			},
 			expectedStats: nil,
 			expectedError: assert.AnError,
@@ -65,7 +68,9 @@ func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Configurar el mock
+			// Limpiar mock y configurar para este test
+			mockRepo.ExpectedCalls = nil
+			mockRepo.Calls = nil
 			tt.mockSetup()
 
 			// Ejecutar el caso de uso
@@ -87,6 +92,7 @@ func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
 			assert.Equal(t, tt.expectedStats.CrimesByType, result.CrimesByType)
 			assert.Equal(t, tt.expectedStats.CrimesByStatus, result.CrimesByStatus)
 			assert.Equal(t, tt.expectedStats.CrimesByLocation, result.CrimesByLocation)
+			assert.Equal(t, tt.expectedStats.CrimesByAddress, result.CrimesByAddress)
 		})
 	}
 }
