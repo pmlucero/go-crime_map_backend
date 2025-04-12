@@ -3,7 +3,16 @@ definitions:
   controllers.CreateCrimeRequest:
     properties:
       address:
-        example: Av. Corrientes 1234
+        example: Av. Corrientes
+        type: string
+      address_number:
+        example: "1234"
+        type: string
+      city:
+        example: Buenos Aires
+        type: string
+      country:
+        example: Argentina
         type: string
       description:
         example: Robo a mano armada en comercio
@@ -14,19 +23,30 @@ definitions:
       longitude:
         example: -58.381592
         type: number
+      province:
+        example: Buenos Aires
+        type: string
       title:
         example: Robo a mano armada
         type: string
       type:
         example: ROBO
         type: string
+      zip_code:
+        example: "1000"
+        type: string
     required:
     - address
+    - address_number
+    - city
+    - country
     - description
     - latitude
     - longitude
+    - province
     - title
     - type
+    - zip_code
     type: object
   controllers.ErrorResponse:
     properties:
@@ -106,14 +126,21 @@ definitions:
   entities.Location:
     properties:
       address:
-        description: Dirección descriptiva
+        type: string
+      address_number:
+        type: string
+      city:
+        type: string
+      country:
         type: string
       latitude:
-        description: Latitud
         type: number
       longitude:
-        description: Longitud
         type: number
+      province:
+        type: string
+      zip_code:
+        type: string
     type: object
 host: localhost:8080
 info:
