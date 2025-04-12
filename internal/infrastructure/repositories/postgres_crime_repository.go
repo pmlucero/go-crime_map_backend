@@ -230,10 +230,28 @@ func (r *PostgresCrimeRepository) GetStats(ctx context.Context) (*entities.Crime
 		return nil, fmt.Errorf("error al obtener total de delitos: %w", err)
 	}
 
+	// Obtener delitos activos
+	var active int64
+	err = r.db.GetContext(ctx, &active, "SELECT COUNT(*) FROM crimes WHERE deleted_at IS NULL AND status = 'ACTIVE'")
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener delitos activos: %w", err)
+	}
+
+	// Obtener delitos inactivos
+	var inactive int64
+	err = r.db.GetContext(ctx, &inactive, "SELECT COUNT(*) FROM crimes WHERE deleted_at IS NULL AND status = 'INACTIVE'")
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener delitos inactivos: %w", err)
+	}
+
 	// Obtener delitos por tipo
-	var crimesByType map[string]int64
+	type CrimeTypeCount struct {
+		Type  string
+		Count int64
+	}
+	var crimesByType []CrimeTypeCount
 	err = r.db.SelectContext(ctx, &crimesByType, `
-		SELECT crime_type, COUNT(*) as count
+		SELECT crime_type as type, COUNT(*) as count
 		FROM crimes
 		WHERE deleted_at IS NULL
 		GROUP BY crime_type
@@ -242,8 +260,18 @@ func (r *PostgresCrimeRepository) GetStats(ctx context.Context) (*entities.Crime
 		return nil, fmt.Errorf("error al obtener delitos por tipo: %w", err)
 	}
 
+	// Convertir a map
+	crimesByTypeMap := make(map[string]int64)
+	for _, ct := range crimesByType {
+		crimesByTypeMap[ct.Type] = ct.Count
+	}
+
 	// Obtener delitos por estado
-	var crimesByStatus map[string]int64
+	type CrimeStatusCount struct {
+		Status string
+		Count  int64
+	}
+	var crimesByStatus []CrimeStatusCount
 	err = r.db.SelectContext(ctx, &crimesByStatus, `
 		SELECT status, COUNT(*) as count
 		FROM crimes
@@ -254,23 +282,64 @@ func (r *PostgresCrimeRepository) GetStats(ctx context.Context) (*entities.Crime
 		return nil, fmt.Errorf("error al obtener delitos por estado: %w", err)
 	}
 
-	// Obtener delitos por dirección
-	var crimesByAddress map[string]int64
-	err = r.db.SelectContext(ctx, &crimesByAddress, `
-		SELECT address, COUNT(*) as count
+	// Convertir a map
+	crimesByStatusMap := make(map[string]int64)
+	for _, cs := range crimesByStatus {
+		crimesByStatusMap[cs.Status] = cs.Count
+	}
+
+	// Obtener delitos por ubicación
+	type CrimeLocationCount struct {
+		Location string
+		Count    int64
+	}
+	var crimesByLocation []CrimeLocationCount
+	err = r.db.SelectContext(ctx, &crimesByLocation, `
+		SELECT city as location, COUNT(*) as count
 		FROM crimes
 		WHERE deleted_at IS NULL
-		GROUP BY address
+		GROUP BY city
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener delitos por ubicación: %w", err)
+	}
+
+	// Convertir a map
+	crimesByLocationMap := make(map[string]int64)
+	for _, cl := range crimesByLocation {
+		crimesByLocationMap[cl.Location] = cl.Count
+	}
+
+	// Obtener delitos por dirección
+	type CrimeAddressCount struct {
+		Address string
+		Count   int64
+	}
+	var crimesByAddress []CrimeAddressCount
+	err = r.db.SelectContext(ctx, &crimesByAddress, `
+		SELECT CONCAT(address, ' ', COALESCE(address_number, '')) as address, COUNT(*) as count
+		FROM crimes
+		WHERE deleted_at IS NULL
+		GROUP BY address, address_number
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("error al obtener delitos por dirección: %w", err)
 	}
 
+	// Convertir a map
+	crimesByAddressMap := make(map[string]int64)
+	for _, ca := range crimesByAddress {
+		crimesByAddressMap[ca.Address] = ca.Count
+	}
+
 	return &entities.CrimeStats{
-		TotalCrimes:     total,
-		CrimesByType:    crimesByType,
-		CrimesByStatus:  crimesByStatus,
-		CrimesByAddress: crimesByAddress,
-		LastUpdate:      time.Now(),
+		TotalCrimes:      total,
+		ActiveCrimes:     active,
+		InactiveCrimes:   inactive,
+		CrimesByType:     crimesByTypeMap,
+		CrimesByStatus:   crimesByStatusMap,
+		CrimesByLocation: crimesByLocationMap,
+		CrimesByAddress:  crimesByAddressMap,
+		LastUpdate:       time.Now(),
 	}, nil
 }

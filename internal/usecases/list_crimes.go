@@ -29,7 +29,7 @@ type ListCrimesOutput struct {
 
 // ListCrimesUseCase implementa la lógica de negocio para listar delitos
 type ListCrimesUseCase struct {
-	crimeRepository repositories.CrimeRepository
+	repo repositories.CrimeRepository
 }
 
 // ListCrimesParams representa los parámetros para listar delitos
@@ -45,7 +45,7 @@ type ListCrimesParams struct {
 // NewListCrimesUseCase crea una nueva instancia del caso de uso
 func NewListCrimesUseCase(repo repositories.CrimeRepository) *ListCrimesUseCase {
 	return &ListCrimesUseCase{
-		crimeRepository: repo,
+		repo: repo,
 	}
 }
 
@@ -58,12 +58,16 @@ func (uc *ListCrimesUseCase) Execute(ctx context.Context, params usecases.ListCr
 	if params.Limit < 1 {
 		params.Limit = 10
 	}
-	if params.Limit > 100 {
-		params.Limit = 100
+
+	// Validar rango de fechas si se proporciona
+	if !params.StartDate.IsZero() && !params.EndDate.IsZero() {
+		if params.StartDate.After(params.EndDate) {
+			return nil, ErrInvalidDateRange
+		}
 	}
 
 	// Obtener delitos del repositorio
-	crimes, total, err := uc.crimeRepository.List(ctx, params.Page, params.Limit)
+	crimes, total, err := uc.repo.List(ctx, params.Page, params.Limit)
 	if err != nil {
 		return nil, err
 	}

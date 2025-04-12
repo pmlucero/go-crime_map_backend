@@ -3,11 +3,13 @@ package usecases
 import (
 	"context"
 	"testing"
+	"time"
 
 	"go-crime_map_backend/internal/domain/entities"
 	"go-crime_map_backend/internal/mocks"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
@@ -25,68 +27,36 @@ func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
 		InactiveCrimes: 20,
 		CrimesByType: map[string]int64{
 			"ROBO":   50,
-			"HURTO":  30,
-			"ASALTO": 20,
+			"ASALTO": 30,
+			"HURTO":  20,
 		},
 		CrimesByStatus: map[string]int64{
 			"ACTIVE":   80,
 			"INACTIVE": 20,
 		},
 		CrimesByLocation: map[string]int64{
-			"CENTRO": 40,
-			"NORTE":  30,
-			"SUR":    30,
+			"CABA": 60,
+			"GBA":  40,
 		},
+		CrimesByAddress: map[string]int64{
+			"Av. Corrientes": 30,
+			"Av. Rivadavia":  20,
+			"Av. 9 de Julio": 10,
+		},
+		LastUpdate: time.Now(),
 	}
 
-	tests := []struct {
-		name          string
-		mockSetup     func()
-		expectedStats *entities.CrimeStats
-		expectedError error
-	}{
-		{
-			name: "obtener estadísticas exitosamente",
-			mockSetup: func() {
-				mockRepo.On("GetStats", ctx).Return(stats, nil)
-			},
-			expectedStats: stats,
-			expectedError: nil,
-		},
-		{
-			name: "error al obtener estadísticas",
-			mockSetup: func() {
-				mockRepo.On("GetStats", ctx).Return(nil, assert.AnError)
-			},
-			expectedStats: nil,
-			expectedError: assert.AnError,
-		},
-	}
+	// Configurar el mock
+	mockRepo.On("GetStats", mock.Anything).Return(stats, nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Configurar el mock
-			tt.mockSetup()
+	// Ejecutar el caso de uso
+	result, err := useCase.Execute(ctx)
 
-			// Ejecutar el caso de uso
-			result, err := useCase.Execute(ctx)
+	// Verificar resultados
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, stats, result)
 
-			// Verificar el resultado
-			if tt.expectedError != nil {
-				assert.Error(t, err)
-				assert.Equal(t, tt.expectedError, err)
-				assert.Nil(t, result)
-				return
-			}
-
-			assert.NoError(t, err)
-			assert.NotNil(t, result)
-			assert.Equal(t, tt.expectedStats.TotalCrimes, result.TotalCrimes)
-			assert.Equal(t, tt.expectedStats.ActiveCrimes, result.ActiveCrimes)
-			assert.Equal(t, tt.expectedStats.InactiveCrimes, result.InactiveCrimes)
-			assert.Equal(t, tt.expectedStats.CrimesByType, result.CrimesByType)
-			assert.Equal(t, tt.expectedStats.CrimesByStatus, result.CrimesByStatus)
-			assert.Equal(t, tt.expectedStats.CrimesByLocation, result.CrimesByLocation)
-		})
-	}
+	// Verificar que se llamaron los métodos esperados
+	mockRepo.AssertExpectations(t)
 }

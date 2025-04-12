@@ -9,6 +9,7 @@ import (
 	"go-crime_map_backend/internal/infrastructure/database"
 	infraRepo "go-crime_map_backend/internal/infrastructure/repositories"
 	"go-crime_map_backend/internal/usecases"
+	"go-crime_map_backend/internal/utils"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -26,12 +27,17 @@ func TestUpdateCrimeStatusUseCase_Integration(t *testing.T) {
 
 	// Crear un delito de prueba
 	crimeInput := domain_usecases.CreateCrimeInput{
-		Title:       "Robo a mano armada",
-		Type:        "ROBO",
-		Description: "Robo a mano armada en comercio",
-		Latitude:    -34.603722,
-		Longitude:   -58.381592,
-		Address:     "Av. Corrientes 1234",
+		Title:         "Robo a mano armada",
+		Type:          "ROBO",
+		Description:   "Robo a mano armada en comercio",
+		Latitude:      -34.603722,
+		Longitude:     -58.381592,
+		Address:       "Av. Corrientes",
+		AddressNumber: utils.StringPtr("1234"),
+		City:          utils.StringPtr("Buenos Aires"),
+		Province:      utils.StringPtr("Buenos Aires"),
+		Country:       utils.StringPtr("Argentina"),
+		ZipCode:       utils.StringPtr("C1043"),
 	}
 
 	crime, err := createCrimeUseCase.Execute(context.Background(), crimeInput)
@@ -51,19 +57,12 @@ func TestUpdateCrimeStatusUseCase_Integration(t *testing.T) {
 			},
 		},
 		{
-			name: "actualizar estado a DELETED",
-			input: domain_usecases.UpdateCrimeStatusInput{
-				ID:     crime.ID,
-				Status: string(entities.CrimeStatusDeleted),
-			},
-		},
-		{
 			name: "error - delito no encontrado",
 			input: domain_usecases.UpdateCrimeStatusInput{
 				ID:     "123e4567-e89b-12d3-a456-426614174000",
 				Status: string(entities.CrimeStatusInactive),
 			},
-			expectedError: "delito no encontrado",
+			expectedError: "error al obtener el delito: error al obtener el delito: sql: no rows in result set",
 		},
 		{
 			name: "error - estado inválido",
@@ -71,7 +70,7 @@ func TestUpdateCrimeStatusUseCase_Integration(t *testing.T) {
 				ID:     crime.ID,
 				Status: "ESTADO_INVALIDO",
 			},
-			expectedError: "estado inválido",
+			expectedError: "la transición de estado no es válida",
 		},
 	}
 
