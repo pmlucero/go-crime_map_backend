@@ -14,7 +14,7 @@ import (
 )
 
 func TestGetCrimeUseCase_Execute(t *testing.T) {
-	mockRepo := new(mocks.MockCrimeRepository)
+	mockRepo := mocks.NewMockCrimeRepository()
 	useCase := usecases.NewGetCrimeUseCase(mockRepo)
 
 	ctx := context.Background()

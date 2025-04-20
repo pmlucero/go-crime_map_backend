@@ -65,7 +65,7 @@ func TestGetMostCommonTypes(t *testing.T) {
 
 func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
 	// Crear mock del repositorio
-	mockRepo := new(mocks.MockCrimeRepository)
+	mockRepo := mocks.NewMockCrimeRepository()
 	useCase := usecases.NewGetCrimeStatsUseCase(mockRepo)
 
 	// Crear contexto

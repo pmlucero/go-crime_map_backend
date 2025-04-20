@@ -35,7 +35,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 	}
 
 	t.Run("Creación exitosa", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
 
 		input := createValidInput()
@@ -63,7 +63,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Error - título vacío", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
 
 		input := createValidInput()
@@ -78,7 +78,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Error - descripción vacía", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
 
 		input := createValidInput()
@@ -93,7 +93,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Error - tipo vacío", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
 
 		input := createValidInput()
@@ -108,7 +108,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Error - latitud inválida", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
 
 		input := createValidInput()
@@ -123,7 +123,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Error - longitud inválida", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
 
 		input := createValidInput()
@@ -138,7 +138,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Error - dirección vacía", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
 
 		input := createValidInput()
@@ -153,7 +153,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Error - número de dirección nulo", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
 
 		input := createValidInput()
@@ -168,7 +168,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Error - ciudad nula", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
 
 		input := createValidInput()
@@ -183,7 +183,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Error - provincia nula", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
 
 		input := createValidInput()
@@ -198,7 +198,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Error - país nulo", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
 
 		input := createValidInput()
@@ -213,7 +213,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Error - código postal nulo", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
 
 		input := createValidInput()
@@ -228,7 +228,7 @@ func TestCreateCrimeUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Error - error del repositorio", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
 
 		input := createValidInput()

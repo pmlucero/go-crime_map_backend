@@ -17,7 +17,7 @@ func TestMockCrimeRepository_Create(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Creación exitosa", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		crime := &entities.Crime{
 			ID:          "1",
 			Title:       "Robo en tienda",
@@ -41,7 +41,7 @@ func TestMockCrimeRepository_Create(t *testing.T) {
 	})
 
 	t.Run("Error al crear", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		crime := &entities.Crime{
 			ID:          "1",
 			Title:       "Robo en tienda",
@@ -71,7 +71,7 @@ func TestMockCrimeRepository_GetByID(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Obtención exitosa", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		expectedCrime := &entities.Crime{
 			ID:          "1",
 			Title:       "Robo en tienda",
@@ -96,7 +96,7 @@ func TestMockCrimeRepository_GetByID(t *testing.T) {
 	})
 
 	t.Run("Error al obtener", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		expectedError := errors.New("error al obtener el delito")
 
 		mockRepo.On("GetByID", ctx, "1").Return(nil, expectedError).Once()
@@ -114,7 +114,7 @@ func TestMockCrimeRepository_GetAll(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Obtención exitosa", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		expectedCrimes := []*entities.Crime{
 			{
 				ID:          "1",
@@ -148,7 +148,7 @@ func TestMockCrimeRepository_GetAll(t *testing.T) {
 	})
 
 	t.Run("Error al obtener todos", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		expectedError := errors.New("error al obtener los delitos")
 
 		mockRepo.On("GetAll", ctx).Return(nil, expectedError).Once()
@@ -166,7 +166,7 @@ func TestMockCrimeRepository_Update(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Actualización exitosa", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		crime := &entities.Crime{
 			ID:          "1",
 			Title:       "Robo en tienda actualizado",
@@ -190,7 +190,7 @@ func TestMockCrimeRepository_Update(t *testing.T) {
 	})
 
 	t.Run("Error al actualizar", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		crime := &entities.Crime{
 			ID:          "1",
 			Title:       "Robo en tienda actualizado",
@@ -220,7 +220,7 @@ func TestMockCrimeRepository_Delete(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Eliminación exitosa", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		id := "1"
 
 		mockRepo.On("Delete", ctx, id).Return(nil).Once()
@@ -232,7 +232,7 @@ func TestMockCrimeRepository_Delete(t *testing.T) {
 	})
 
 	t.Run("Error al eliminar", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		id := "1"
 		expectedError := errors.New("error al eliminar el delito")
 
@@ -250,7 +250,7 @@ func TestMockCrimeRepository_List(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Listado exitoso", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		expectedCrimes := []entities.Crime{
 			{
 				ID:          "1",
@@ -299,7 +299,7 @@ func TestMockCrimeRepository_List(t *testing.T) {
 	})
 
 	t.Run("Error al listar", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		expectedError := errors.New("error al listar los delitos")
 		page := 1
 		limit := 10
@@ -323,7 +323,7 @@ func TestMockCrimeRepository_GetStats(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Obtención exitosa", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		expectedStats := &entities.CrimeStats{
 			TotalCrimes:    100,
 			ActiveCrimes:   70,
@@ -350,7 +350,7 @@ func TestMockCrimeRepository_GetStats(t *testing.T) {
 	})
 
 	t.Run("Error al obtener estadísticas", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		expectedError := errors.New("error al obtener estadísticas")
 
 		mockRepo.On("GetStats", ctx).Return(nil, expectedError).Once()

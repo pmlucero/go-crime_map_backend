@@ -22,7 +22,7 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 	endDate := now
 
 	t.Run("Listar todos los delitos", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewListCrimesUseCase(mockRepo)
 
 		expectedCrimes := []entities.Crime{
@@ -60,7 +60,7 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Error en rango de fechas inválido", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewListCrimesUseCase(mockRepo)
 
 		output, err := useCase.Execute(ctx, domain_usecases.ListCrimesParams{
@@ -77,7 +77,7 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Listar delitos con filtros", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewListCrimesUseCase(mockRepo)
 
 		expectedCrimes := []entities.Crime{
@@ -119,7 +119,7 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Error al listar delitos", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewListCrimesUseCase(mockRepo)
 
 		expectedError := errors.New("error al listar delitos")
@@ -140,7 +140,7 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Página negativa", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewListCrimesUseCase(mockRepo)
 
 		var nilTime *time.Time
@@ -159,7 +159,7 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Límite negativo", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewListCrimesUseCase(mockRepo)
 
 		var nilTime *time.Time
@@ -178,7 +178,7 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Límite muy grande", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewListCrimesUseCase(mockRepo)
 
 		var nilTime *time.Time
@@ -197,7 +197,7 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 	})
 
 	t.Run("Sin fechas", func(t *testing.T) {
-		mockRepo := new(mocks.MockCrimeRepository)
+		mockRepo := mocks.NewMockCrimeRepository()
 		useCase := usecases.NewListCrimesUseCase(mockRepo)
 
 		var nilTime *time.Time
@@ -219,7 +219,7 @@ func TestListCrimesUseCase_Execute(t *testing.T) {
 func TestListCrimes_Execute_WithFilters(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
-	repo := new(mocks.MockCrimeRepository)
+	repo := mocks.NewMockCrimeRepository()
 	uc := usecases.NewListCrimesUseCase(repo)
 
 	expectedCrimes := []entities.Crime{
@@ -259,7 +259,7 @@ func TestListCrimes_Execute_WithFilters(t *testing.T) {
 func TestListCrimes_Execute_WithTypeFilter(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
-	repo := new(mocks.MockCrimeRepository)
+	repo := mocks.NewMockCrimeRepository()
 	uc := usecases.NewListCrimesUseCase(repo)
 
 	crimeType := string(entities.CrimeTypeRobo)
