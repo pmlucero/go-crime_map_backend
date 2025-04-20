@@ -70,7 +70,7 @@ func (uc *ListCrimesUseCase) Execute(ctx context.Context, params usecases.ListCr
 	}
 
 	// Obtener delitos del repositorio
-	crimes, total, err := uc.crimeRepository.List(ctx, params.Page, params.Limit)
+	crimes, total, err := uc.crimeRepository.List(ctx, params.Page, params.Limit, params.StartDate, params.EndDate, params.Type, params.Status)
 	if err != nil {
 		return nil, err
 	}

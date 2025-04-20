@@ -1,0 +1,550 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>usecases: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">go-crime_map_backend/internal/usecases/create_crime.go (81.5%)</option>
+				
+				<option value="file1">go-crime_map_backend/internal/usecases/delete_crime.go (69.2%)</option>
+				
+				<option value="file2">go-crime_map_backend/internal/usecases/get_crime.go (77.8%)</option>
+				
+				<option value="file3">go-crime_map_backend/internal/usecases/get_crime_stats.go (100.0%)</option>
+				
+				<option value="file4">go-crime_map_backend/internal/usecases/list_crimes.go (100.0%)</option>
+				
+				<option value="file5">go-crime_map_backend/internal/usecases/update_crime_status.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package usecases
+
+import (
+        "context"
+        "fmt"
+
+        "go-crime_map_backend/internal/domain/entities"
+        "go-crime_map_backend/internal/domain/repositories"
+        "go-crime_map_backend/internal/domain/usecases"
+
+        "github.com/google/uuid"
+)
+
+// CreateCrimeInput representa los datos necesarios para crear un delito
+type CreateCrimeInput struct {
+        Title         string
+        Description   string
+        Type          string
+        Latitude      float64
+        Longitude     float64
+        Address       string
+        AddressNumber *string
+        City          *string
+        Province      *string
+        Country       *string
+        ZipCode       *string
+}
+
+// CreateCrimeUseCase implementa la lógica de negocio para crear delitos
+type CreateCrimeUseCase struct {
+        crimeRepository repositories.CrimeRepository
+}
+
+// NewCreateCrimeUseCase crea una nueva instancia del caso de uso
+func NewCreateCrimeUseCase(repo repositories.CrimeRepository) *CreateCrimeUseCase <span class="cov8" title="1">{
+        return &amp;CreateCrimeUseCase{
+                crimeRepository: repo,
+        }
+}</span>
+
+// Execute ejecuta el caso de uso
+func (uc *CreateCrimeUseCase) Execute(ctx context.Context, input usecases.CreateCrimeInput) (*entities.Crime, error) <span class="cov8" title="1">{
+        // Validar datos de entrada
+        if input.Title == "" </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("el título es requerido")
+        }</span>
+        <span class="cov8" title="1">if input.Description == "" </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("la descripción es requerida")
+        }</span>
+        <span class="cov8" title="1">if input.Type == "" </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("el tipo es requerido")
+        }</span>
+        <span class="cov8" title="1">if input.Latitude &lt; -90 || input.Latitude &gt; 90 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("la latitud debe estar entre -90 y 90")
+        }</span>
+        <span class="cov8" title="1">if input.Longitude &lt; -180 || input.Longitude &gt; 180 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("la longitud debe estar entre -180 y 180")
+        }</span>
+        <span class="cov8" title="1">if input.Address == "" </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("la dirección es requerida")
+        }</span>
+        <span class="cov8" title="1">if input.AddressNumber == nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("el número de la dirección es requerido")
+        }</span>
+        <span class="cov8" title="1">if input.City == nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("la ciudad es requerida")
+        }</span>
+        <span class="cov8" title="1">if input.Province == nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("la provincia es requerida")
+        }</span>
+        <span class="cov8" title="1">if input.Country == nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("el país es requerido")
+        }</span>
+        <span class="cov8" title="1">if input.ZipCode == nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("el código postal es requerido")
+        }</span>
+
+        // Crear entidad Crime
+        <span class="cov8" title="1">crime := &amp;entities.Crime{
+                ID:          uuid.New().String(),
+                Title:       input.Title,
+                Description: input.Description,
+                Type:        input.Type,
+                Status:      "ACTIVE",
+                Location: entities.Location{
+                        Latitude:      input.Latitude,
+                        Longitude:     input.Longitude,
+                        Address:       input.Address,
+                        AddressNumber: input.AddressNumber,
+                        City:          input.City,
+                        Province:      input.Province,
+                        Country:       input.Country,
+                        ZipCode:       input.ZipCode,
+                },
+        }
+
+        // Guardar en el repositorio
+        if err := uc.crimeRepository.Create(ctx, crime); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("error al crear el delito: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return crime, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package usecases
+
+import (
+        "context"
+        "fmt"
+
+        "go-crime_map_backend/internal/domain/entities"
+        "go-crime_map_backend/internal/domain/repositories"
+)
+
+// DeleteCrimeUseCase implementa la lógica de negocio para eliminar delitos
+type DeleteCrimeUseCase struct {
+        crimeRepository repositories.CrimeRepository
+}
+
+// NewDeleteCrimeUseCase crea una nueva instancia del caso de uso
+func NewDeleteCrimeUseCase(repo repositories.CrimeRepository) *DeleteCrimeUseCase <span class="cov8" title="1">{
+        return &amp;DeleteCrimeUseCase{
+                crimeRepository: repo,
+        }
+}</span>
+
+// Execute ejecuta el caso de uso
+func (uc *DeleteCrimeUseCase) Execute(ctx context.Context, id string) error <span class="cov8" title="1">{
+        // Validar datos de entrada
+        if id == "" </span><span class="cov0" title="0">{
+                return fmt.Errorf("el ID es requerido")
+        }</span>
+
+        // Verificar que el delito existe
+        <span class="cov8" title="1">crime, err := uc.crimeRepository.GetByID(ctx, id)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("error al obtener el delito: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if crime == nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("delito no encontrado")
+        }</span>
+
+        // Verificar que el delito no esté ya eliminado
+        <span class="cov8" title="1">if crime.Status == string(entities.CrimeStatusDeleted) </span><span class="cov0" title="0">{
+                return fmt.Errorf("el delito ya fue eliminado")
+        }</span>
+
+        // Eliminar del repositorio
+        <span class="cov8" title="1">if err := uc.crimeRepository.Delete(ctx, id); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("error al eliminar el delito: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package usecases
+
+import (
+        "context"
+        "fmt"
+
+        "go-crime_map_backend/internal/domain/entities"
+        "go-crime_map_backend/internal/domain/repositories"
+)
+
+// GetCrimeUseCase implementa la lógica de negocio para obtener un delito por ID
+type GetCrimeUseCase struct {
+        crimeRepository repositories.CrimeRepository
+}
+
+// NewGetCrimeUseCase crea una nueva instancia del caso de uso
+func NewGetCrimeUseCase(repo repositories.CrimeRepository) *GetCrimeUseCase <span class="cov8" title="1">{
+        return &amp;GetCrimeUseCase{
+                crimeRepository: repo,
+        }
+}</span>
+
+// Execute ejecuta el caso de uso
+func (uc *GetCrimeUseCase) Execute(ctx context.Context, id string) (*entities.Crime, error) <span class="cov8" title="1">{
+        // Validar que el ID no esté vacío
+        if id == "" </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("el ID del delito es requerido")
+        }</span>
+
+        // Obtener el delito del repositorio
+        <span class="cov8" title="1">crime, err := uc.crimeRepository.GetByID(ctx, id)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("error al obtener el delito: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if crime == nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("delito no encontrado")
+        }</span>
+
+        <span class="cov8" title="1">return crime, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package usecases
+
+import (
+        "context"
+        "sort"
+        "time"
+
+        "go-crime_map_backend/internal/domain/entities"
+        "go-crime_map_backend/internal/domain/repositories"
+)
+
+// CrimeStats representa las estadísticas de delitos
+type CrimeStats struct {
+        TotalCrimes     int                          // Total de delitos
+        CrimesByType    map[string]int               // Delitos por tipo
+        CrimesByStatus  map[entities.CrimeStatus]int // Delitos por estado
+        CrimesByMonth   map[string]int               // Delitos por mes
+        RecentCrimes    []*entities.Crime            // Delitos más recientes
+        MostCommonTypes []string                     // Tipos de delitos más comunes
+}
+
+// GetCrimeStatsInput representa los filtros para obtener estadísticas
+type GetCrimeStatsInput struct {
+        StartDate time.Time // Fecha inicial
+        EndDate   time.Time // Fecha final
+        Limit     int       // Límite de resultados para delitos recientes
+}
+
+// GetCrimeStatsUseCase implementa la lógica de negocio para obtener estadísticas de delitos
+type GetCrimeStatsUseCase struct {
+        crimeRepository repositories.CrimeRepository
+}
+
+// NewGetCrimeStatsUseCase crea una nueva instancia del caso de uso
+func NewGetCrimeStatsUseCase(repo repositories.CrimeRepository) *GetCrimeStatsUseCase <span class="cov8" title="1">{
+        return &amp;GetCrimeStatsUseCase{
+                crimeRepository: repo,
+        }
+}</span>
+
+// Execute ejecuta el caso de uso
+func (uc *GetCrimeStatsUseCase) Execute(ctx context.Context) (*entities.CrimeStats, error) <span class="cov8" title="1">{
+        // Obtener estadísticas del repositorio
+        stats, err := uc.crimeRepository.GetStats(ctx)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return stats, nil</span>
+}
+
+// typeCount representa un par de tipo de delito y su cantidad
+type typeCount struct {
+        crimeType string
+        count     int
+}
+
+// GetMostCommonTypes obtiene los tipos de delitos más comunes
+func GetMostCommonTypes(crimesByType map[string]int) []string <span class="cov8" title="1">{
+        // Crear slice de pares tipo-cantidad
+        pairs := make([]typeCount, 0, len(crimesByType))
+        for crimeType, count := range crimesByType </span><span class="cov8" title="1">{
+                pairs = append(pairs, typeCount{crimeType, count})
+        }</span>
+
+        // Ordenar por cantidad (descendente)
+        <span class="cov8" title="1">sort.Slice(pairs, func(i, j int) bool </span><span class="cov8" title="1">{
+                return pairs[i].count &gt; pairs[j].count
+        }</span>)
+
+        // Obtener los 5 tipos más comunes
+        <span class="cov8" title="1">result := make([]string, 0, 5)
+        for i := 0; i &lt; len(pairs) &amp;&amp; i &lt; 5; i++ </span><span class="cov8" title="1">{
+                result = append(result, pairs[i].crimeType)
+        }</span>
+
+        <span class="cov8" title="1">return result</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package usecases
+
+import (
+        "context"
+        "time"
+
+        "go-crime_map_backend/internal/domain/entities"
+        "go-crime_map_backend/internal/domain/repositories"
+        "go-crime_map_backend/internal/domain/usecases"
+)
+
+// ListCrimesInput representa los filtros para listar delitos
+type ListCrimesInput struct {
+        Type      string    // Tipo de delito
+        Status    string    // Estado del delito
+        StartDate time.Time // Fecha inicial
+        EndDate   time.Time // Fecha final
+        Limit     int       // Límite de resultados por página
+        Offset    int       // Desplazamiento para paginación
+}
+
+// ListCrimesOutput representa el resultado de listar delitos
+type ListCrimesOutput struct {
+        Crimes     []entities.Crime // Lista de delitos
+        TotalCount int64            // Total de delitos que coinciden con los filtros
+        Page       int              // Página actual
+        TotalPages int              // Total de páginas
+}
+
+// ListCrimesUseCase implementa la lógica de negocio para listar delitos
+type ListCrimesUseCase struct {
+        crimeRepository repositories.CrimeRepository
+}
+
+// ListCrimesParams representa los parámetros para listar delitos
+type ListCrimesParams struct {
+        Page      int
+        Limit     int
+        StartDate *time.Time
+        EndDate   *time.Time
+        Type      *string
+        Status    *string
+}
+
+// NewListCrimesUseCase crea una nueva instancia del caso de uso
+func NewListCrimesUseCase(repo repositories.CrimeRepository) *ListCrimesUseCase <span class="cov8" title="1">{
+        return &amp;ListCrimesUseCase{
+                crimeRepository: repo,
+        }
+}</span>
+
+// Execute ejecuta el caso de uso
+func (uc *ListCrimesUseCase) Execute(ctx context.Context, params usecases.ListCrimesParams) (*entities.CrimeList, error) <span class="cov8" title="1">{
+        // Validar parámetros
+        if params.Page &lt; 1 </span><span class="cov8" title="1">{
+                params.Page = 1
+        }</span>
+        <span class="cov8" title="1">if params.Limit &lt; 1 </span><span class="cov8" title="1">{
+                params.Limit = 10
+        }</span>
+        <span class="cov8" title="1">if params.Limit &gt; 100 </span><span class="cov8" title="1">{
+                params.Limit = 100
+        }</span>
+
+        // Validar rango de fechas
+        <span class="cov8" title="1">if params.StartDate != nil &amp;&amp; params.EndDate != nil </span><span class="cov8" title="1">{
+                if params.StartDate.After(*params.EndDate) </span><span class="cov8" title="1">{
+                        return nil, ErrInvalidDateRange
+                }</span>
+        }
+
+        // Obtener delitos del repositorio
+        <span class="cov8" title="1">crimes, total, err := uc.crimeRepository.List(ctx, params.Page, params.Limit, params.StartDate, params.EndDate, params.Type, params.Status)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return &amp;entities.CrimeList{
+                Items: crimes,
+                Total: total,
+        }, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package usecases
+
+import (
+        "context"
+        "fmt"
+
+        "go-crime_map_backend/internal/domain/entities"
+        "go-crime_map_backend/internal/domain/repositories"
+        "go-crime_map_backend/internal/domain/usecases"
+)
+
+// UpdateCrimeStatusInput representa los datos necesarios para actualizar el estado
+type UpdateCrimeStatusInput struct {
+        ID     string
+        Status string
+}
+
+// UpdateCrimeStatusUseCase implementa la lógica de negocio para actualizar el estado de un delito
+type UpdateCrimeStatusUseCase struct {
+        crimeRepository repositories.CrimeRepository
+}
+
+// NewUpdateCrimeStatusUseCase crea una nueva instancia del caso de uso
+func NewUpdateCrimeStatusUseCase(repo repositories.CrimeRepository) *UpdateCrimeStatusUseCase <span class="cov8" title="1">{
+        return &amp;UpdateCrimeStatusUseCase{
+                crimeRepository: repo,
+        }
+}</span>
+
+// Execute ejecuta el caso de uso
+func (uc *UpdateCrimeStatusUseCase) Execute(ctx context.Context, input usecases.UpdateCrimeStatusInput) error <span class="cov8" title="1">{
+        // Validar datos de entrada
+        if input.ID == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("el ID es requerido")
+        }</span>
+        <span class="cov8" title="1">if input.Status == "" </span><span class="cov8" title="1">{
+                return fmt.Errorf("el estado es requerido")
+        }</span>
+
+        // Obtener el delito del repositorio
+        <span class="cov8" title="1">crime, err := uc.crimeRepository.GetByID(ctx, input.ID)
+        if err != nil </span><span class="cov8" title="1">{
+                if err == repositories.ErrNotFound </span><span class="cov8" title="1">{
+                        return err
+                }</span>
+                <span class="cov8" title="1">return fmt.Errorf("error al obtener el delito: %w", err)</span>
+        }
+
+        <span class="cov8" title="1">if crime == nil </span><span class="cov8" title="1">{
+                return repositories.ErrNotFound
+        }</span>
+
+        // Validar que el delito no esté eliminado
+        <span class="cov8" title="1">if crime.Status == string(entities.CrimeStatusDeleted) </span><span class="cov8" title="1">{
+                return ErrCrimeAlreadyDeleted
+        }</span>
+
+        // Validar que el nuevo estado sea válido
+        <span class="cov8" title="1">if input.Status != string(entities.CrimeStatusActive) &amp;&amp; input.Status != string(entities.CrimeStatusInactive) </span><span class="cov8" title="1">{
+                return ErrInvalidStatusTransition
+        }</span>
+
+        // Actualizar el estado
+        <span class="cov8" title="1">crime.Status = input.Status
+
+        // Guardar en el repositorio
+        if err := uc.crimeRepository.Update(ctx, crime); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("error al actualizar el delito: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

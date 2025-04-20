@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"go-crime_map_backend/internal/domain/entities"
 	"go-crime_map_backend/internal/domain/usecases"
@@ -223,6 +224,11 @@ func (c *CrimeController) GetCrimeStats(ctx *gin.Context) {
 		return
 	}
 
+	if stats == nil {
+		ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "No se encontraron estadísticas"})
+		return
+	}
+
 	ctx.JSON(http.StatusOK, stats)
 }
 
@@ -246,6 +252,11 @@ func (c *CrimeController) GetCrime(ctx *gin.Context) {
 		return
 	}
 
+	if crime == nil {
+		ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "No se encontró el delito"})
+		return
+	}
+
 	ctx.JSON(http.StatusOK, crime)
 }
 
@@ -254,11 +265,13 @@ type ErrorResponse struct {
 	Error string `json:"error" example:"Error message"`
 }
 
-// Helper functions
-func parseFloat64(s string) float64 {
+// ParseFloat64 convierte una cadena a float64, retornando 0 si la cadena está vacía o es inválida
+func ParseFloat64(s string) float64 {
 	if s == "" {
 		return 0
 	}
+	// Eliminar espacios en blanco
+	s = strings.TrimSpace(s)
 	f, _ := strconv.ParseFloat(s, 64)
 	return f
 }

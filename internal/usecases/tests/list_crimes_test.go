@@ -2,107 +2,281 @@ package tests
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"go-crime_map_backend/internal/domain/entities"
 	domain_usecases "go-crime_map_backend/internal/domain/usecases"
 	"go-crime_map_backend/internal/mocks"
 	"go-crime_map_backend/internal/usecases"
-
-	"github.com/stretchr/testify/assert"
+	"go-crime_map_backend/internal/utils"
 )
 
 func TestListCrimesUseCase_Execute(t *testing.T) {
-	mockRepo := new(mocks.MockCrimeRepository)
-	useCase := usecases.NewListCrimesUseCase(mockRepo)
-
 	ctx := context.Background()
-
 	now := time.Now()
 	startDate := now.Add(-24 * time.Hour)
 	endDate := now
 
-	crimes := []entities.Crime{
+	t.Run("Listar todos los delitos", func(t *testing.T) {
+		mockRepo := new(mocks.MockCrimeRepository)
+		useCase := usecases.NewListCrimesUseCase(mockRepo)
+
+		expectedCrimes := []entities.Crime{
+			{
+				ID:          "1",
+				Title:       "Robo en tienda",
+				Description: "Robo en tienda de conveniencia",
+				Type:        string(entities.CrimeTypeRobo),
+				Status:      string(entities.CrimeStatusActive),
+				Location: entities.Location{
+					Latitude:      40.7128,
+					Longitude:     -74.0060,
+					Address:       "Av. Corrientes",
+					AddressNumber: utils.StringPtr("1234"),
+				},
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+		}
+
+		var nilTime *time.Time
+		var nilString *string
+
+		mockRepo.On("List", ctx, 1, 10, nilTime, nilTime, nilString, nilString).Return(expectedCrimes, int64(1), nil)
+
+		output, err := useCase.Execute(ctx, domain_usecases.ListCrimesParams{
+			Page:  1,
+			Limit: 10,
+		})
+
+		assert.NoError(t, err)
+		assert.Equal(t, expectedCrimes, output.Items)
+		assert.Equal(t, int64(1), output.Total)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("Error en rango de fechas inválido", func(t *testing.T) {
+		mockRepo := new(mocks.MockCrimeRepository)
+		useCase := usecases.NewListCrimesUseCase(mockRepo)
+
+		output, err := useCase.Execute(ctx, domain_usecases.ListCrimesParams{
+			Page:      1,
+			Limit:     10,
+			StartDate: &endDate,
+			EndDate:   &startDate,
+		})
+
+		assert.Error(t, err)
+		assert.Equal(t, usecases.ErrInvalidDateRange, err)
+		assert.Nil(t, output)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("Listar delitos con filtros", func(t *testing.T) {
+		mockRepo := new(mocks.MockCrimeRepository)
+		useCase := usecases.NewListCrimesUseCase(mockRepo)
+
+		expectedCrimes := []entities.Crime{
+			{
+				ID:          "1",
+				Title:       "Robo en tienda",
+				Description: "Robo en tienda de conveniencia",
+				Type:        string(entities.CrimeTypeRobo),
+				Status:      string(entities.CrimeStatusActive),
+				Location: entities.Location{
+					Latitude:      40.7128,
+					Longitude:     -74.0060,
+					Address:       "Av. Corrientes",
+					AddressNumber: utils.StringPtr("1234"),
+				},
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+		}
+
+		crimeType := string(entities.CrimeTypeRobo)
+		status := string(entities.CrimeStatusActive)
+
+		mockRepo.On("List", ctx, 1, 10, &startDate, &endDate, &crimeType, &status).Return(expectedCrimes, int64(1), nil)
+
+		output, err := useCase.Execute(ctx, domain_usecases.ListCrimesParams{
+			Page:      1,
+			Limit:     10,
+			Type:      &crimeType,
+			Status:    &status,
+			StartDate: &startDate,
+			EndDate:   &endDate,
+		})
+
+		assert.NoError(t, err)
+		assert.Equal(t, expectedCrimes, output.Items)
+		assert.Equal(t, int64(1), output.Total)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("Error al listar delitos", func(t *testing.T) {
+		mockRepo := new(mocks.MockCrimeRepository)
+		useCase := usecases.NewListCrimesUseCase(mockRepo)
+
+		expectedError := errors.New("error al listar delitos")
+		var nilTime *time.Time
+		var nilString *string
+
+		mockRepo.On("List", ctx, 1, 10, nilTime, nilTime, nilString, nilString).Return(nil, int64(0), expectedError)
+
+		output, err := useCase.Execute(ctx, domain_usecases.ListCrimesParams{
+			Page:  1,
+			Limit: 10,
+		})
+
+		assert.Error(t, err)
+		assert.Equal(t, expectedError, err)
+		assert.Nil(t, output)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("Página negativa", func(t *testing.T) {
+		mockRepo := new(mocks.MockCrimeRepository)
+		useCase := usecases.NewListCrimesUseCase(mockRepo)
+
+		var nilTime *time.Time
+		var nilString *string
+
+		mockRepo.On("List", ctx, 1, 10, nilTime, nilTime, nilString, nilString).Return(nil, int64(0), nil)
+
+		output, err := useCase.Execute(ctx, domain_usecases.ListCrimesParams{
+			Page:  -1,
+			Limit: 10,
+		})
+
+		assert.NoError(t, err)
+		assert.NotNil(t, output)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("Límite negativo", func(t *testing.T) {
+		mockRepo := new(mocks.MockCrimeRepository)
+		useCase := usecases.NewListCrimesUseCase(mockRepo)
+
+		var nilTime *time.Time
+		var nilString *string
+
+		mockRepo.On("List", ctx, 1, 10, nilTime, nilTime, nilString, nilString).Return(nil, int64(0), nil)
+
+		output, err := useCase.Execute(ctx, domain_usecases.ListCrimesParams{
+			Page:  1,
+			Limit: -5,
+		})
+
+		assert.NoError(t, err)
+		assert.NotNil(t, output)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("Límite muy grande", func(t *testing.T) {
+		mockRepo := new(mocks.MockCrimeRepository)
+		useCase := usecases.NewListCrimesUseCase(mockRepo)
+
+		var nilTime *time.Time
+		var nilString *string
+
+		mockRepo.On("List", ctx, 1, 100, nilTime, nilTime, nilString, nilString).Return(nil, int64(0), nil)
+
+		output, err := useCase.Execute(ctx, domain_usecases.ListCrimesParams{
+			Page:  1,
+			Limit: 1000,
+		})
+
+		assert.NoError(t, err)
+		assert.NotNil(t, output)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("Sin fechas", func(t *testing.T) {
+		mockRepo := new(mocks.MockCrimeRepository)
+		useCase := usecases.NewListCrimesUseCase(mockRepo)
+
+		var nilTime *time.Time
+		var nilString *string
+
+		mockRepo.On("List", ctx, 1, 10, nilTime, nilTime, nilString, nilString).Return(nil, int64(0), nil)
+
+		output, err := useCase.Execute(ctx, domain_usecases.ListCrimesParams{
+			Page:  1,
+			Limit: 10,
+		})
+
+		assert.NoError(t, err)
+		assert.NotNil(t, output)
+		mockRepo.AssertExpectations(t)
+	})
+}
+
+func TestListCrimes_Execute_WithFilters(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	repo := new(mocks.MockCrimeRepository)
+	uc := usecases.NewListCrimesUseCase(repo)
+
+	expectedCrimes := []entities.Crime{
 		{
 			ID:          "1",
-			Type:        "ROBO",
-			Description: "Robo a mano armada",
-			Location: entities.Location{
-				Latitude:  -34.603722,
-				Longitude: -58.381592,
-			},
-			Status:    "ACTIVE",
-			CreatedAt: now,
-		},
-		{
-			ID:          "2",
-			Type:        "ASALTO",
-			Description: "Asalto a comercio",
-			Location: entities.Location{
-				Latitude:  -34.608722,
-				Longitude: -58.382592,
-			},
-			Status:    "ACTIVE",
-			CreatedAt: now,
+			Title:       "Robo en tienda",
+			Description: "Robo en tienda de conveniencia",
+			Type:        string(entities.CrimeTypeRobo),
+			Status:      string(entities.CrimeStatusActive),
 		},
 	}
 
-	tests := []struct {
-		name          string
-		input         domain_usecases.ListCrimesParams
-		mockSetup     func()
-		expectedError error
-		expectedCount int
-	}{
-		{
-			name: "Listar todos los delitos",
-			input: domain_usecases.ListCrimesParams{
-				Page:  1,
-				Limit: 10,
-			},
-			mockSetup: func() {
-				mockRepo.On("List", ctx, 1, 10).Return(crimes, int64(2), nil)
-			},
-			expectedError: nil,
-			expectedCount: 2,
-		},
-		{
-			name: "Error en rango de fechas inválido",
-			input: domain_usecases.ListCrimesParams{
-				Page:      1,
-				Limit:     10,
-				StartDate: &endDate,
-				EndDate:   &startDate,
-			},
-			mockSetup:     func() {},
-			expectedError: usecases.ErrInvalidDateRange,
-			expectedCount: 0,
-		},
-	}
+	startDate := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	endDate := time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)
+	crimeType := string(entities.CrimeTypeRobo)
+	status := string(entities.CrimeStatusActive)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Limpiar mock y configurar para este test
-			mockRepo.ExpectedCalls = nil
-			mockRepo.Calls = nil
-			tt.mockSetup()
+	repo.On("List", ctx, 1, 10, &startDate, &endDate, &crimeType, &status).Return(expectedCrimes, int64(1), nil)
 
-			result, err := useCase.Execute(ctx, tt.input)
+	// Act
+	output, err := uc.Execute(ctx, domain_usecases.ListCrimesParams{
+		Page:      1,
+		Limit:     10,
+		Type:      &crimeType,
+		Status:    &status,
+		StartDate: &startDate,
+		EndDate:   &endDate,
+	})
 
-			if tt.expectedError != nil {
-				assert.Error(t, err)
-				assert.Equal(t, tt.expectedError, err)
-				assert.Nil(t, result)
-				return
-			}
+	// Assert
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), output.Total)
+	assert.Equal(t, expectedCrimes, output.Items)
+	repo.AssertExpectations(t)
+}
 
-			assert.NoError(t, err)
-			assert.NotNil(t, result)
-			assert.Equal(t, tt.expectedCount, len(result.Items))
-			assert.Equal(t, int64(tt.expectedCount), result.Total)
+func TestListCrimes_Execute_WithTypeFilter(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	repo := new(mocks.MockCrimeRepository)
+	uc := usecases.NewListCrimesUseCase(repo)
 
-			mockRepo.AssertExpectations(t)
-		})
-	}
+	crimeType := string(entities.CrimeTypeRobo)
+	var nilTime *time.Time
+	var nilString *string
+
+	repo.On("List", ctx, 1, 10, nilTime, nilTime, &crimeType, nilString).Return([]entities.Crime{}, int64(0), nil)
+
+	// Act
+	output, err := uc.Execute(ctx, domain_usecases.ListCrimesParams{
+		Page:  1,
+		Limit: 10,
+		Type:  &crimeType,
+	})
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, output)
+	repo.AssertExpectations(t)
 }

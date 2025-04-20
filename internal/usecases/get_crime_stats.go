@@ -55,17 +55,20 @@ type typeCount struct {
 	count     int
 }
 
-// getMostCommonTypes obtiene los tipos de delitos más comunes
-func getMostCommonTypes(crimesByType map[string]int) []string {
+// GetMostCommonTypes obtiene los tipos de delitos más comunes
+func GetMostCommonTypes(crimesByType map[string]int) []string {
 	// Crear slice de pares tipo-cantidad
 	pairs := make([]typeCount, 0, len(crimesByType))
 	for crimeType, count := range crimesByType {
 		pairs = append(pairs, typeCount{crimeType, count})
 	}
 
-	// Ordenar por cantidad (descendente)
+	// Ordenar por cantidad (descendente) y alfabéticamente en caso de empate
 	sort.Slice(pairs, func(i, j int) bool {
-		return pairs[i].count > pairs[j].count
+		if pairs[i].count != pairs[j].count {
+			return pairs[i].count > pairs[j].count
+		}
+		return pairs[i].crimeType < pairs[j].crimeType
 	})
 
 	// Obtener los 5 tipos más comunes

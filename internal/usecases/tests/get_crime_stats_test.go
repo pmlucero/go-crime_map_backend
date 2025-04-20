@@ -1,4 +1,4 @@
-package usecases
+package tests
 
 import (
 	"context"
@@ -7,14 +7,66 @@ import (
 
 	"go-crime_map_backend/internal/domain/entities"
 	"go-crime_map_backend/internal/mocks"
+	"go-crime_map_backend/internal/usecases"
 
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGetMostCommonTypes(t *testing.T) {
+	tests := []struct {
+		name         string
+		crimesByType map[string]int
+		expected     []string
+	}{
+		{
+			name: "obtener top 5 tipos más comunes",
+			crimesByType: map[string]int{
+				"ROBO":      50,
+				"HURTO":     30,
+				"ASALTO":    20,
+				"VIOLENCIA": 15,
+				"FRAUDE":    10,
+				"OTRO":      5,
+			},
+			expected: []string{"ROBO", "HURTO", "ASALTO", "VIOLENCIA", "FRAUDE"},
+		},
+		{
+			name: "menos de 5 tipos",
+			crimesByType: map[string]int{
+				"ROBO":   50,
+				"HURTO":  30,
+				"ASALTO": 20,
+			},
+			expected: []string{"ROBO", "HURTO", "ASALTO"},
+		},
+		{
+			name:         "mapa vacío",
+			crimesByType: map[string]int{},
+			expected:     []string{},
+		},
+		{
+			name: "empates en cantidad",
+			crimesByType: map[string]int{
+				"ROBO":   50,
+				"HURTO":  50,
+				"ASALTO": 30,
+			},
+			expected: []string{"HURTO", "ROBO", "ASALTO"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := usecases.GetMostCommonTypes(tt.crimesByType)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
 	// Crear mock del repositorio
 	mockRepo := new(mocks.MockCrimeRepository)
-	useCase := NewGetCrimeStatsUseCase(mockRepo)
+	useCase := usecases.NewGetCrimeStatsUseCase(mockRepo)
 
 	// Crear contexto
 	ctx := context.Background()

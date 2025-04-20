@@ -1,7 +1,8 @@
-package usecases
+package tests
 
 import (
 	"context"
+	"time"
 
 	"go-crime_map_backend/internal/domain/entities"
 
@@ -44,8 +45,8 @@ func (m *MockCrimeRepository) Delete(ctx context.Context, id string) error {
 	return args.Error(0)
 }
 
-func (m *MockCrimeRepository) List(ctx context.Context, page, limit int) ([]entities.Crime, int64, error) {
-	args := m.Called(ctx, page, limit)
+func (m *MockCrimeRepository) List(ctx context.Context, page, limit int, startDate, endDate *time.Time, crimeType, status *string) ([]entities.Crime, int64, error) {
+	args := m.Called(ctx, page, limit, startDate, endDate, crimeType, status)
 	if args.Get(0) == nil {
 		return nil, 0, args.Error(2)
 	}
