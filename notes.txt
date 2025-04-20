@@ -98,3 +98,12 @@ Notas:
   # Ejecutar con air
   air
   ```
+
+  ==========================
+  Ejecución del test de cobertura
+
+go test -coverpkg=./... ./... -coverprofile=coverage.out
+
+echo "=== Database ===" && go test -coverpkg=go-crime_map_backend/internal/infrastructure/database -cover ./internal/infrastructure/database/... -coverprofile=database_coverage.out && go tool cover -func=database_coverage.out && echo "\n=== Controllers ===" && go test -coverpkg=go-crime_map_backend/internal/interface/controllers -cover ./internal/interface/controllers/... -coverprofile=controllers_coverage.out && go tool cover -func=controllers_coverage.out && echo "\n=== Mocks ===" && go test -coverpkg=go-crime_map_backend/internal/mocks -cover ./internal/mocks/... -coverprofile=mocks_coverage.out && go tool cover -func=mocks_coverage.out && echo "\n=== Usecases ===" && go test -coverpkg=go-crime_map_backend/internal/usecases -cover ./internal/usecases/... -coverprofile=usecases_coverage.out && go tool cover -func=usecases_coverage.out && echo "\n=== Utils ===" && go test -coverpkg=go-crime_map_backend/internal/utils -cover ./internal/utils/... -coverprofile=utils_coverage.out && go tool cover -func=utils_coverage.out
+
+go test -coverpkg=./... ./internal/usecases/tests -coverprofile=coverage.out && go tool cover -func=coverage.out

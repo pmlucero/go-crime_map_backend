@@ -1,87 +1,71 @@
-# Hoja de Ruta - Crime Map Backend
+# Roadmap del Proyecto
 
-## Estado Actual
-- ✅ Estructura base del proyecto con Clean Architecture
-- ✅ Implementación inicial del caso de uso para crear delitos
-- ✅ Configuración básica del servidor HTTP con Gin
-- ✅ Endpoint de health check
-- ✅ Endpoint básico para crear delitos
-- ✅ Implementación de la generación de IDs usando UUID v4
-- ✅ Implementación del repositorio PostgreSQL
-- ✅ Implementación de endpoints CRUD completos
-- ✅ Implementación de estadísticas de delitos
-- ✅ Implementación de paginación y filtros básicos
-- ✅ Pruebas de integración básicas
-- ✅ Configuración de pre-commit hooks
-- ✅ Implementación de CI/CD básico
-- ✅ Documentación Swagger actualizada
-- ✅ Validaciones básicas de datos
-- ✅ Tests unitarios para casos de uso
-- ✅ Tests de integración mejorados
+## Fase 1: Estructura Base y Configuración ✅
+- [x] Configuración inicial del proyecto
+- [x] Estructura de directorios
+- [x] Configuración de dependencias
+- [x] Configuración de base de datos
+- [x] Configuración de logging
+- [x] Configuración de variables de entorno
 
-## Pendientes Inmediatos
+## Fase 2: Implementación de Entidades y Repositorios ✅
+- [x] Definición de entidades
+  - [x] Crime
+  - [x] Location
+  - [x] CrimeStats
+- [x] Implementación de repositorios
+  - [x] CrimeRepository
+  - [x] PostgresCrimeRepository
 
-### 1. Validaciones de Negocio
-- [x] Implementar validación de tipos de delitos permitidos
-- [ ] Agregar validación de fechas (no futuras, no muy antiguas)
-- [x] Implementar validación de ubicaciones (dentro de límites geográficos)
-- [x] Agregar validación de descripciones (longitud mínima/máxima)
-- [x] Implementar sanitización de datos de entrada
+## Fase 3: Implementación de Casos de Uso ✅
+- [x] CreateCrime
+- [x] UpdateCrime
+- [x] DeleteCrime
+- [x] GetCrime
+- [x] ListCrimes
+- [x] GetCrimeStats
+- [x] UpdateCrimeStatus
 
-### 2. Pruebas
-- [x] Implementar pruebas unitarias para:
+## Fase 4: Implementación de API ✅
+- [x] Configuración de servidor HTTP
+- [x] Implementación de controladores
+- [x] Implementación de rutas
+- [x] Middleware de autenticación
+- [x] Middleware de validación
+- [x] Middleware de logging
+
+## Fase 5: Pruebas y Documentación ✅
+- [x] Pruebas unitarias
+  - [x] Entidades
+  - [x] Repositorios
   - [x] Casos de uso
-  - [ ] Repositorios
   - [x] Controladores
-- [x] Mejorar pruebas de integración
-- [x] Configurar cobertura de código
-- [ ] Implementar pruebas de carga
+- [x] Pruebas de integración
+  - [x] API
+  - [x] Base de datos
+- [x] Documentación
+  - [x] API
+  - [x] Código
+  - [x] Instalación
+  - [x] Uso
 
-### 3. Documentación
-- [x] Documentar la API con Swagger/OpenAPI
-- [ ] Crear guía de instalación y configuración
-- [ ] Documentar la estructura del proyecto
-- [ ] Agregar ejemplos de uso
-- [ ] Crear guía de contribución
+## Fase 6: Mejoras y Optimizaciones ✅
+- [x] Mejora de cobertura de pruebas
+- [x] Optimización de consultas
+- [x] Mejora de manejo de errores
+- [x] Mejora de logging
+- [x] Mejora de documentación
 
-### 4. Seguridad
-- [ ] Implementar autenticación básica con API Key
-  - [ ] Sistema de generación y revocación de API Keys
-  - [ ] Almacenamiento seguro de API Keys
-  - [ ] Middleware de validación de API Key
-  - [ ] Documentación de uso de API Keys
-- [ ] Implementar autorización por roles
-  - [ ] Definir roles básicos (admin, user, read-only)
-  - [ ] Implementar middleware de autorización
-  - [ ] Documentar permisos por rol
-- [ ] Agregar rate limiting por API Key
-- [ ] Implementar CORS
-- [ ] Implementar logging seguro
-- [ ] (Backlog) Implementar OAuth2
-  - [ ] Integración con proveedores OAuth2
-  - [ ] Manejo de tokens JWT
-  - [ ] Refresh tokens
-  - [ ] Revocación de tokens
-  - [ ] Migración de API Keys a OAuth2
+## Fase 7: Despliegue y Monitoreo
+- [ ] Configuración de CI/CD
+- [ ] Configuración de monitoreo
+- [ ] Configuración de alertas
+- [ ] Configuración de backups
+- [ ] Configuración de alta disponibilidad
 
-### 5. Monitoreo y Logging
-- [ ] Implementar sistema de logging estructurado
-- [ ] Agregar métricas de la aplicación
-- [ ] Configurar alertas
-- [ ] Implementar tracing distribuido
-
-## Próximos Pasos Sugeridos
-1. Implementar validación de fechas
-2. Completar pruebas unitarias para repositorios
-3. Crear guía de instalación y configuración
-4. Implementar autenticación con API Key
-5. Configurar monitoreo y logging
-
-## Consideraciones Técnicas
-- Mantener la arquitectura limpia y los principios SOLID
-- Asegurar la escalabilidad del sistema
-- Implementar manejo de errores consistente
-- Mantener la documentación actualizada
-- Seguir las mejores prácticas de Go
-- Implementar seguridad por capas (defense in depth)
-- Considerar la migración futura a OAuth2 en el diseño actual 
+## Fase 8: Mejoras Futuras
+- [ ] Implementación de caché
+- [ ] Implementación de búsqueda
+- [ ] Implementación de notificaciones
+- [ ] Implementación de reportes
+- [ ] Implementación de estadísticas avanzadas 
