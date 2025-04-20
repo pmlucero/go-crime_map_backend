@@ -2,6 +2,8 @@ package tests
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -16,7 +18,7 @@ import (
 )
 
 func TestUpdateCrimeStatusUseCase_Execute(t *testing.T) {
-	mockRepo := new(mocks.MockCrimeRepository)
+	mockRepo := mocks.NewMockCrimeRepository()
 	useCase := usecases.NewUpdateCrimeStatusUseCase(mockRepo)
 
 	ctx := context.Background()
@@ -63,6 +65,60 @@ func TestUpdateCrimeStatusUseCase_Execute(t *testing.T) {
 		mockSetup     func()
 		expectedError error
 	}{
+		{
+			name: "Error - ID vacío",
+			input: domain_usecases.UpdateCrimeStatusInput{
+				ID:     "",
+				Status: string(entities.CrimeStatusActive),
+			},
+			mockSetup:     func() {},
+			expectedError: fmt.Errorf("el ID es requerido"),
+		},
+		{
+			name: "Error - Status vacío",
+			input: domain_usecases.UpdateCrimeStatusInput{
+				ID:     "1",
+				Status: "",
+			},
+			mockSetup:     func() {},
+			expectedError: fmt.Errorf("el estado es requerido"),
+		},
+		{
+			name: "Error genérico al obtener el delito",
+			input: domain_usecases.UpdateCrimeStatusInput{
+				ID:     "1",
+				Status: string(entities.CrimeStatusActive),
+			},
+			mockSetup: func() {
+				mockRepo.On("GetByID", ctx, "1").Return(nil, errors.New("error de base de datos"))
+			},
+			expectedError: fmt.Errorf("error al obtener el delito: %w", errors.New("error de base de datos")),
+		},
+		{
+			name: "Error - GetByID devuelve nil sin error",
+			input: domain_usecases.UpdateCrimeStatusInput{
+				ID:     "1",
+				Status: string(entities.CrimeStatusActive),
+			},
+			mockSetup: func() {
+				mockRepo.On("GetByID", ctx, "1").Return(nil, nil)
+			},
+			expectedError: repositories.ErrNotFound,
+		},
+		{
+			name: "Error al actualizar el delito",
+			input: domain_usecases.UpdateCrimeStatusInput{
+				ID:     "1",
+				Status: string(entities.CrimeStatusInactive),
+			},
+			mockSetup: func() {
+				mockRepo.On("GetByID", ctx, "1").Return(activeCrime, nil)
+				mockRepo.On("Update", ctx, mock.MatchedBy(func(crime *entities.Crime) bool {
+					return crime.ID == "1" && crime.Status == string(entities.CrimeStatusInactive)
+				})).Return(errors.New("error al actualizar"))
+			},
+			expectedError: fmt.Errorf("error al actualizar el delito: %w", errors.New("error al actualizar")),
+		},
 		{
 			name: "Actualizar estado de activo a inactivo",
 			input: domain_usecases.UpdateCrimeStatusInput{
@@ -139,13 +195,16 @@ func TestUpdateCrimeStatusUseCase_Execute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Limpiar mock y configurar para este test
+			mockRepo.ExpectedCalls = nil
+			mockRepo.Calls = nil
 			tt.mockSetup()
 
 			err := useCase.Execute(ctx, tt.input)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)
-				assert.Equal(t, tt.expectedError, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
 				return
 			}
 

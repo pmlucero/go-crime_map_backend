@@ -2,7 +2,9 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"strconv"
 	"time"
 
 	"go-crime_map_backend/internal/domain/entities"
@@ -62,39 +64,107 @@ func (r *PostgresCrimeRepository) Create(ctx context.Context, crime *entities.Cr
 }
 
 // List obtiene una lista paginada de delitos
-func (r *PostgresCrimeRepository) List(ctx context.Context, page, limit int) ([]entities.Crime, int64, error) {
-	offset := (page - 1) * limit
+func (r *PostgresCrimeRepository) List(ctx context.Context, page, limit int, startDate, endDate *time.Time, crimeType, status *string) ([]entities.Crime, int64, error) {
+	query := `SELECT id, title, description, crime_type as type, status, latitude, longitude, address, address_number, city, province, country, zip_code, created_at, updated_at FROM crimes WHERE deleted_at IS NULL`
+	args := []interface{}{}
 
-	// Obtener total de registros
-	var total int64
-	err := r.db.GetContext(ctx, &total, "SELECT COUNT(*) FROM crimes WHERE deleted_at IS NULL")
-	if err != nil {
-		return nil, 0, fmt.Errorf("error al obtener total de delitos: %w", err)
+	// Agregar filtros
+	if startDate != nil {
+		query += " AND created_at >= $1"
+		args = append(args, startDate)
+	}
+	if endDate != nil {
+		query += " AND created_at <= $" + strconv.Itoa(len(args)+1)
+		args = append(args, endDate)
+	}
+	if crimeType != nil {
+		query += " AND crime_type = $" + strconv.Itoa(len(args)+1)
+		args = append(args, crimeType)
+	}
+	if status != nil {
+		query += " AND status = $" + strconv.Itoa(len(args)+1)
+		args = append(args, status)
 	}
 
-	// Obtener delitos
-	query := `
-		SELECT 
-			id, title, description, crime_type, status,
-			latitude as "location.latitude",
-			longitude as "location.longitude",
-			address as "location.address",
-			address_number as "location.address_number",
-			city as "location.city",
-			province as "location.province",
-			country as "location.country",
-			zip_code as "location.zip_code",
-			created_at, updated_at, deleted_at
-		FROM crimes
-		WHERE deleted_at IS NULL
-		ORDER BY created_at DESC
-		LIMIT $1 OFFSET $2
-	`
+	// Agregar paginación
+	query += " ORDER BY created_at DESC LIMIT $" + strconv.Itoa(len(args)+1) + " OFFSET $" + strconv.Itoa(len(args)+2)
+	args = append(args, limit, (page-1)*limit)
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
 
 	var crimes []entities.Crime
-	err = r.db.SelectContext(ctx, &crimes, query, limit, offset)
+	for rows.Next() {
+		var crime entities.Crime
+		var addressNumber, city, province, country, zipCode sql.NullString
+		err := rows.Scan(
+			&crime.ID,
+			&crime.Title,
+			&crime.Description,
+			&crime.Type,
+			&crime.Status,
+			&crime.Location.Latitude,
+			&crime.Location.Longitude,
+			&crime.Location.Address,
+			&addressNumber,
+			&city,
+			&province,
+			&country,
+			&zipCode,
+			&crime.CreatedAt,
+			&crime.UpdatedAt,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		if addressNumber.Valid {
+			crime.Location.AddressNumber = &addressNumber.String
+		}
+		if city.Valid {
+			crime.Location.City = &city.String
+		}
+		if province.Valid {
+			crime.Location.Province = &province.String
+		}
+		if country.Valid {
+			crime.Location.Country = &country.String
+		}
+		if zipCode.Valid {
+			crime.Location.ZipCode = &zipCode.String
+		}
+
+		crimes = append(crimes, crime)
+	}
+
+	// Obtener el total de registros
+	countQuery := `SELECT COUNT(*) FROM crimes WHERE deleted_at IS NULL`
+	countArgs := []interface{}{}
+
+	if startDate != nil {
+		countQuery += " AND created_at >= $1"
+		countArgs = append(countArgs, startDate)
+	}
+	if endDate != nil {
+		countQuery += " AND created_at <= $" + strconv.Itoa(len(countArgs)+1)
+		countArgs = append(countArgs, endDate)
+	}
+	if crimeType != nil {
+		countQuery += " AND crime_type = $" + strconv.Itoa(len(countArgs)+1)
+		countArgs = append(countArgs, crimeType)
+	}
+	if status != nil {
+		countQuery += " AND status = $" + strconv.Itoa(len(countArgs)+1)
+		countArgs = append(countArgs, status)
+	}
+
+	var total int64
+	err = r.db.QueryRowContext(ctx, countQuery, countArgs...).Scan(&total)
 	if err != nil {
-		return nil, 0, fmt.Errorf("error al obtener delitos: %w", err)
+		return nil, 0, err
 	}
 
 	return crimes, total, nil

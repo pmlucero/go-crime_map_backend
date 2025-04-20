@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"testing"
@@ -20,12 +21,12 @@ func SetupTestDB(t *testing.T) *sqlx.DB {
 	// Conectar a la base de datos
 	db, err := sqlx.Connect("postgres", dbURL)
 	if err != nil {
-		t.Fatalf("Error al conectar a la base de datos de prueba: %v", err)
+		panic(fmt.Sprintf("Error al conectar a la base de datos de prueba: %v", err))
 	}
 
 	// Crear tablas
 	if err := createTables(db); err != nil {
-		t.Fatalf("Error al crear tablas: %v", err)
+		panic(fmt.Sprintf("Error al crear tablas: %v", err))
 	}
 
 	return db
@@ -42,13 +43,13 @@ func CleanupTestDB(t *testing.T) {
 	// Conectar a la base de datos
 	db, err := sqlx.Connect("postgres", dbURL)
 	if err != nil {
-		t.Fatalf("Error al conectar a la base de datos de prueba: %v", err)
+		panic(fmt.Sprintf("Error al conectar a la base de datos de prueba: %v", err))
 	}
 	defer db.Close()
 
 	// Eliminar registros
 	if err := deleteRecords(db); err != nil {
-		t.Fatalf("Error al eliminar registros: %v", err)
+		panic(fmt.Sprintf("Error al eliminar registros: %v", err))
 	}
 }
 
@@ -116,10 +117,38 @@ func deleteRecords(db *sqlx.DB) error {
 	return nil
 }
 
-// getEnvOrDefault obtiene una variable de entorno o devuelve un valor por defecto
-func getEnvOrDefault(key, defaultValue string) string {
+// GetEnvOrDefault obtiene una variable de entorno o devuelve un valor por defecto
+func GetEnvOrDefault(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
 	return defaultValue
+}
+
+// DeleteRecords elimina los registros de las tablas
+func DeleteRecords(db interface{}) error {
+	queries := []string{
+		`DELETE FROM crimes`,
+	}
+
+	var execer interface {
+		Exec(query string, args ...interface{}) (sql.Result, error)
+	}
+
+	switch v := db.(type) {
+	case *sqlx.DB:
+		execer = v
+	case *sql.DB:
+		execer = v
+	default:
+		return fmt.Errorf("tipo de base de datos no soportado: %T", db)
+	}
+
+	for _, query := range queries {
+		if _, err := execer.Exec(query); err != nil {
+			return fmt.Errorf("error al ejecutar query %s: %w", query, err)
+		}
+	}
+
+	return nil
 }

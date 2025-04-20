@@ -14,7 +14,10 @@ type ListCrimesFilter struct {
 	StartDate time.Time // Fecha inicial
 	EndDate   time.Time // Fecha final
 	Limit     int       // Límite de resultados por página
-	Offset    int       // Desplazamiento para paginación
+	Page      int       // Número de página
+	Latitude  float64   // Latitud para búsqueda por ubicación
+	Longitude float64   // Longitud para búsqueda por ubicación
+	RadiusKm  float64   // Radio de búsqueda en kilómetros
 }
 
 // ListCrimesResult representa el resultado de listar delitos
@@ -29,7 +32,7 @@ type CrimeRepository interface {
 	Create(ctx context.Context, crime *entities.Crime) error
 
 	// List obtiene una lista paginada de delitos
-	List(ctx context.Context, page, limit int) ([]entities.Crime, int64, error)
+	List(ctx context.Context, page, limit int, startDate, endDate *time.Time, crimeType, status *string) ([]entities.Crime, int64, error)
 
 	// GetByID obtiene un delito por su ID
 	GetByID(ctx context.Context, id string) (*entities.Crime, error)
