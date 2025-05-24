@@ -349,16 +349,33 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "address",
+                "address_number",
+                "city",
+                "country",
                 "description",
                 "latitude",
                 "longitude",
+                "province",
                 "title",
-                "type"
+                "type",
+                "zip_code"
             ],
             "properties": {
                 "address": {
                     "type": "string",
-                    "example": "Av. Corrientes 1234"
+                    "example": "Av. Corrientes"
+                },
+                "address_number": {
+                    "type": "string",
+                    "example": "1234"
+                },
+                "city": {
+                    "type": "string",
+                    "example": "Buenos Aires"
+                },
+                "country": {
+                    "type": "string",
+                    "example": "Argentina"
                 },
                 "description": {
                     "type": "string",
@@ -372,6 +389,10 @@ const docTemplate = `{
                     "type": "number",
                     "example": -58.381592
                 },
+                "province": {
+                    "type": "string",
+                    "example": "Buenos Aires"
+                },
                 "title": {
                     "type": "string",
                     "example": "Robo a mano armada"
@@ -379,6 +400,10 @@ const docTemplate = `{
                 "type": {
                     "type": "string",
                     "example": "ROBO"
+                },
+                "zip_code": {
+                    "type": "string",
+                    "example": "1000"
                 }
             }
         },
@@ -500,16 +525,28 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "address": {
-                    "description": "Dirección descriptiva",
+                    "type": "string"
+                },
+                "address_number": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "country": {
                     "type": "string"
                 },
                 "latitude": {
-                    "description": "Latitud",
                     "type": "number"
                 },
                 "longitude": {
-                    "description": "Longitud",
                     "type": "number"
+                },
+                "province": {
+                    "type": "string"
+                },
+                "zip_code": {
+                    "type": "string"
                 }
             }
         }
