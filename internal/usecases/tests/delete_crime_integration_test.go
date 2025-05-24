@@ -9,7 +9,6 @@ import (
 	"go-crime_map_backend/internal/infrastructure/database"
 	infraRepo "go-crime_map_backend/internal/infrastructure/repositories"
 	"go-crime_map_backend/internal/usecases"
-	"go-crime_map_backend/internal/utils"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -32,11 +31,11 @@ func TestDeleteCrimeUseCase_Integration(t *testing.T) {
 		Latitude:      -34.603722,
 		Longitude:     -58.381592,
 		Address:       "Av. 9 de Julio",
-		AddressNumber: utils.StringPtr("1000"),
-		City:          utils.StringPtr("Buenos Aires"),
-		Province:      utils.StringPtr("Buenos Aires"),
-		Country:       utils.StringPtr("Argentina"),
-		ZipCode:       utils.StringPtr("C1043"),
+		AddressNumber: "1000",
+		City:          "Buenos Aires",
+		Province:      "Buenos Aires",
+		Country:       "Argentina",
+		ZipCode:       "C1043",
 	}
 	crime1, err := createCrimeUseCase.Execute(context.Background(), input1)
 	assert.NoError(t, err)
@@ -50,11 +49,11 @@ func TestDeleteCrimeUseCase_Integration(t *testing.T) {
 		Latitude:      -34.603722,
 		Longitude:     -58.381592,
 		Address:       "Av. Corrientes",
-		AddressNumber: utils.StringPtr("2000"),
-		City:          utils.StringPtr("Buenos Aires"),
-		Province:      utils.StringPtr("Buenos Aires"),
-		Country:       utils.StringPtr("Argentina"),
-		ZipCode:       utils.StringPtr("C1043"),
+		AddressNumber: "2000",
+		City:          "Buenos Aires",
+		Province:      "Buenos Aires",
+		Country:       "Argentina",
+		ZipCode:       "C1043",
 	}
 	crime2, err := createCrimeUseCase.Execute(context.Background(), input2)
 	assert.NoError(t, err)
@@ -67,41 +66,38 @@ func TestDeleteCrimeUseCase_Integration(t *testing.T) {
 	}{
 		{
 			name:    "eliminar delito existente",
-			crimeID: crime1.ID,
+			crimeID: crime1.UUID,
 		},
 		{
 			name:          "error - delito no encontrado",
 			crimeID:       "123e4567-e89b-12d3-a456-426614174000",
-			expectedError: "error al obtener el delito: error al obtener el delito: sql: no rows in result set",
+			expectedError: "error al obtener el delito: delito no encontrado con UUID 123e4567-e89b-12d3-a456-426614174000",
 		},
 		{
 			name:          "Error al intentar eliminar un delito que ya fue eliminado",
-			crimeID:       crime2.ID,
-			expectedError: "error al obtener el delito: error al obtener el delito: sql: no rows in result set",
+			crimeID:       crime2.UUID,
+			expectedError: "el delito ya fue eliminado",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Si es el caso de "ya eliminado", primero eliminamos el delito
+			// Arrange
 			if tt.name == "Error al intentar eliminar un delito que ya fue eliminado" {
 				err := useCase.Execute(context.Background(), tt.crimeID)
 				assert.NoError(t, err)
 			}
-
+			// Act
 			err := useCase.Execute(context.Background(), tt.crimeID)
-
+			// Assert
 			if tt.expectedError != "" {
 				assert.Error(t, err)
 				assert.Equal(t, tt.expectedError, err.Error())
 				return
 			}
-
 			assert.NoError(t, err)
-
-			// Verificar que el delito fue eliminado usando una consulta directa
 			var status string
-			err = db.QueryRowContext(context.Background(), "SELECT status FROM crimes WHERE id = $1", tt.crimeID).Scan(&status)
+			err = db.QueryRowContext(context.Background(), "SELECT status FROM crimes WHERE uuid = $1", tt.crimeID).Scan(&status)
 			assert.NoError(t, err)
 			assert.Equal(t, string(entities.CrimeStatusDeleted), status)
 		})

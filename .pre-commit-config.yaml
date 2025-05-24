@@ -1,6 +1,6 @@
 repos:
 - repo: https://github.com/golangci/golangci-lint
-  rev: v1.55.2
+  rev: v2.1.6
   hooks:
     - id: golangci-lint
       args: [--timeout=5m]
@@ -11,3 +11,51 @@ repos:
     - id: go-fmt
     - id: go-imports
     - id: go-unit-tests
+    - id: go-mod-tidy
+
+- repo: local
+  hooks:
+    - id: test-structure
+      name: Test Structure Validation
+      entry: |
+        bash -c 'find . -type f -name "*_test.go" | grep -v "/tests/"'
+      language: system
+      types: [go]
+      pass_filenames: false
+
+    - id: test-naming
+      name: Test Naming Convention
+      entry: |
+        bash -c '
+        for file in $(find . -type f -name "*_test.go"); do
+          if ! grep -E "func Test[A-Z][a-zA-Z0-9]*_" "$file" > /dev/null; then
+            echo "Error in $file: Test functions should follow TestFunctionName_Scenario pattern"
+            exit 1
+          fi
+        done'
+      language: system
+      types: [go]
+      pass_filenames: false
+
+    - id: test-organization
+      name: Test Organization Pattern
+      entry: |
+        bash -c '
+        for file in $(find . -type f -name "*_test.go"); do
+          if ! (grep -E "// Arrange" "$file" > /dev/null && 
+                grep -E "// Act" "$file" > /dev/null && 
+                grep -E "// Assert" "$file" > /dev/null); then
+            echo "Error in $file: Tests should follow Arrange-Act-Assert pattern"
+            exit 1
+          fi
+        done'
+      language: system
+      types: [go]
+      pass_filenames: false
+
+    - id: test-coverage
+      name: Test Coverage Comment
+      entry: bash -c './coverage.sh'
+      language: system
+      pass_filenames: false
+      always_run: true

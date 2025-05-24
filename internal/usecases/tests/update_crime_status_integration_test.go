@@ -32,11 +32,11 @@ func TestUpdateCrimeStatusUseCase_Integration(t *testing.T) {
 		Latitude:      -34.603722,
 		Longitude:     -58.381592,
 		Address:       "Av. Corrientes",
-		AddressNumber: strPtr("1234"),
-		City:          strPtr("Buenos Aires"),
-		Province:      strPtr("Buenos Aires"),
-		Country:       strPtr("Argentina"),
-		ZipCode:       strPtr("C1043"),
+		AddressNumber: "1234",
+		City:          "Buenos Aires",
+		Province:      "Buenos Aires",
+		Country:       "Argentina",
+		ZipCode:       "C1043",
 	}
 
 	crime, err := createCrimeUseCase.Execute(context.Background(), crimeInput)
@@ -51,29 +51,29 @@ func TestUpdateCrimeStatusUseCase_Integration(t *testing.T) {
 		{
 			name: "actualizar estado a INACTIVE",
 			input: domain_usecases.UpdateCrimeStatusInput{
-				ID:     crime.ID,
+				UUID:   crime.UUID,
 				Status: string(entities.CrimeStatusInactive),
 			},
 		},
 		{
 			name: "actualizar estado a ACTIVE",
 			input: domain_usecases.UpdateCrimeStatusInput{
-				ID:     crime.ID,
+				UUID:   crime.UUID,
 				Status: string(entities.CrimeStatusActive),
 			},
 		},
 		{
 			name: "error - delito no encontrado",
 			input: domain_usecases.UpdateCrimeStatusInput{
-				ID:     "123e4567-e89b-12d3-a456-426614174000",
+				UUID:   "123e4567-e89b-12d3-a456-426614174000",
 				Status: string(entities.CrimeStatusInactive),
 			},
-			expectedError: "sql: no rows in result set",
+			expectedError: "error al obtener el delito: delito no encontrado con UUID 123e4567-e89b-12d3-a456-426614174000",
 		},
 		{
 			name: "error - estado inválido",
 			input: domain_usecases.UpdateCrimeStatusInput{
-				ID:     crime.ID,
+				UUID:   crime.UUID,
 				Status: "ESTADO_INVALIDO",
 			},
 			expectedError: "la transición de estado no es válida",
@@ -82,18 +82,18 @@ func TestUpdateCrimeStatusUseCase_Integration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			// (No hay preparación adicional, pero se deja el comentario para el linter)
+			// Act
 			err := useCase.Execute(context.Background(), tt.input)
-
+			// Assert
 			if tt.expectedError != "" {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedError)
 				return
 			}
-
 			assert.NoError(t, err)
-
-			// Verificar que el estado se actualizó correctamente
-			updatedCrime, err := getCrimeUseCase.Execute(context.Background(), tt.input.ID)
+			updatedCrime, err := getCrimeUseCase.Execute(context.Background(), tt.input.UUID)
 			assert.NoError(t, err)
 			assert.NotNil(t, updatedCrime)
 			assert.Equal(t, tt.input.Status, updatedCrime.Status)

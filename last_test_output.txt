@@ -1,0 +1,26 @@
+?   	go-crime_map_backend	[no test files]
+?   	go-crime_map_backend/cmd/api	[no test files]
+?   	go-crime_map_backend/docs	[no test files]
+?   	go-crime_map_backend/internal/api	[no test files]
+?   	go-crime_map_backend/internal/domain/entities	[no test files]
+ok  	go-crime_map_backend/internal/domain/entities/tests	0.555s
+?   	go-crime_map_backend/internal/domain/repositories	[no test files]
+?   	go-crime_map_backend/internal/domain/repositories/mocks	[no test files]
+?   	go-crime_map_backend/internal/domain/usecases	[no test files]
+?   	go-crime_map_backend/internal/domain/usecases/mocks	[no test files]
+?   	go-crime_map_backend/internal/infrastructure/database	[no test files]
+ok  	go-crime_map_backend/internal/infrastructure/database/tests	(cached)
+?   	go-crime_map_backend/internal/infrastructure/repositories	[no test files]
+?   	go-crime_map_backend/internal/infrastructure/server	[no test files]
+?   	go-crime_map_backend/internal/infrastructure/usecases	[no test files]
+?   	go-crime_map_backend/internal/interface/controllers	[no test files]
+ok  	go-crime_map_backend/internal/interface/controllers/tests	(cached)
+ok  	go-crime_map_backend/internal/interface/middleware	(cached)
+ok  	go-crime_map_backend/internal/interface/middleware/tests	(cached)
+?   	go-crime_map_backend/internal/interface/routes	[no test files]
+?   	go-crime_map_backend/internal/security	[no test files]
+ok  	go-crime_map_backend/internal/security/tests	(cached)
+?   	go-crime_map_backend/internal/usecases	[no test files]
+?   	go-crime_map_backend/internal/usecases/mocks	[no test files]
+ok  	go-crime_map_backend/internal/usecases/tests	0.790s
+?   	go-crime_map_backend/internal/utils	[no test files]

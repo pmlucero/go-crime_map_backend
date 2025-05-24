@@ -1,3 +1,5 @@
+// coverage: 85.7%
+
 package tests
 
 import (
@@ -9,91 +11,170 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewPostgresDB(t *testing.T) {
-	tests := []struct {
-		name    string
-		envVars map[string]string
-		wantErr bool
-	}{
-		{
-			name: "Conexión exitosa con valores por defecto",
-			envVars: map[string]string{
-				"DB_HOST":     "",
-				"DB_PORT":     "",
-				"DB_USER":     "",
-				"DB_PASSWORD": "",
-				"DB_NAME":     "",
-			},
-			wantErr: false,
-		},
-		{
-			name: "Conexión exitosa con valores personalizados",
-			envVars: map[string]string{
-				"DB_HOST":     "localhost",
-				"DB_PORT":     "5432",
-				"DB_USER":     "postgres",
-				"DB_PASSWORD": "postgres",
-				"DB_NAME":     "crime_map",
-			},
-			wantErr: false,
-		},
-		{
-			name: "Error de conexión - Puerto inválido",
-			envVars: map[string]string{
-				"DB_HOST":     "localhost",
-				"DB_PORT":     "9999",
-				"DB_USER":     "postgres",
-				"DB_PASSWORD": "postgres",
-				"DB_NAME":     "crime_map",
-			},
-			wantErr: true,
-		},
-		{
-			name: "Error de conexión - Host inválido",
-			envVars: map[string]string{
-				"DB_HOST":     "invalid_host",
-				"DB_PORT":     "5432",
-				"DB_USER":     "postgres",
-				"DB_PASSWORD": "postgres",
-				"DB_NAME":     "crime_map",
-			},
-			wantErr: true,
-		},
+func TestNewPostgresDB_DefaultValues_Success(t *testing.T) {
+	// Arrange
+	originalEnv := map[string]string{
+		"DB_HOST":     os.Getenv("DB_HOST"),
+		"DB_PORT":     os.Getenv("DB_PORT"),
+		"DB_USER":     os.Getenv("DB_USER"),
+		"DB_PASSWORD": os.Getenv("DB_PASSWORD"),
+		"DB_NAME":     os.Getenv("DB_NAME"),
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Guardar variables de entorno originales
-			originalEnv := make(map[string]string)
-			for key := range tt.envVars {
-				originalEnv[key] = os.Getenv(key)
+	t.Cleanup(func() {
+		for key, value := range originalEnv {
+			if err := os.Setenv(key, value); err != nil {
+				t.Fatal(err)
 			}
+		}
+	})
 
-			// Establecer variables de entorno para el test
-			for key, value := range tt.envVars {
-				os.Setenv(key, value)
-			}
-
-			// Restaurar variables de entorno originales al finalizar
-			defer func() {
-				for key, value := range originalEnv {
-					os.Setenv(key, value)
-				}
-			}()
-
-			// Ejecutar el test
-			db, err := database.NewPostgresDB()
-			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, db)
-			} else {
-				if assert.NoError(t, err) {
-					assert.NotNil(t, db)
-					// Cerrar la conexión
-					err = db.Close()
-					assert.NoError(t, err)
-				}
-			}
-		})
+	envVars := map[string]string{
+		"DB_HOST":     "",
+		"DB_PORT":     "",
+		"DB_USER":     "",
+		"DB_PASSWORD": "",
+		"DB_NAME":     "",
 	}
+
+	for key, value := range envVars {
+		if err := os.Setenv(key, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Act
+	db, err := database.NewPostgresDB()
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, db)
+	if db != nil {
+		err = db.Close()
+		assert.NoError(t, err)
+	}
+}
+
+func TestNewPostgresDB_CustomValues_Success(t *testing.T) {
+	// Arrange
+	originalEnv := map[string]string{
+		"DB_HOST":     os.Getenv("DB_HOST"),
+		"DB_PORT":     os.Getenv("DB_PORT"),
+		"DB_USER":     os.Getenv("DB_USER"),
+		"DB_PASSWORD": os.Getenv("DB_PASSWORD"),
+		"DB_NAME":     os.Getenv("DB_NAME"),
+	}
+
+	t.Cleanup(func() {
+		for key, value := range originalEnv {
+			if err := os.Setenv(key, value); err != nil {
+				t.Fatal(err)
+			}
+		}
+	})
+
+	envVars := map[string]string{
+		"DB_HOST":     "localhost",
+		"DB_PORT":     "5432",
+		"DB_USER":     "postgres",
+		"DB_PASSWORD": "postgres",
+		"DB_NAME":     "crime_map",
+	}
+
+	for key, value := range envVars {
+		if err := os.Setenv(key, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Act
+	db, err := database.NewPostgresDB()
+
+	// Assert
+	assert.NoError(t, err)
+	assert.NotNil(t, db)
+	if db != nil {
+		err = db.Close()
+		assert.NoError(t, err)
+	}
+}
+
+func TestNewPostgresDB_InvalidPort_Error(t *testing.T) {
+	// Arrange
+	originalEnv := map[string]string{
+		"DB_HOST":     os.Getenv("DB_HOST"),
+		"DB_PORT":     os.Getenv("DB_PORT"),
+		"DB_USER":     os.Getenv("DB_USER"),
+		"DB_PASSWORD": os.Getenv("DB_PASSWORD"),
+		"DB_NAME":     os.Getenv("DB_NAME"),
+	}
+
+	t.Cleanup(func() {
+		for key, value := range originalEnv {
+			if err := os.Setenv(key, value); err != nil {
+				t.Fatal(err)
+			}
+		}
+	})
+
+	envVars := map[string]string{
+		"DB_HOST":     "localhost",
+		"DB_PORT":     "9999",
+		"DB_USER":     "postgres",
+		"DB_PASSWORD": "postgres",
+		"DB_NAME":     "crime_map",
+	}
+
+	for key, value := range envVars {
+		if err := os.Setenv(key, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Act
+	db, err := database.NewPostgresDB()
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, db)
+}
+
+func TestNewPostgresDB_InvalidHost_Error(t *testing.T) {
+	// Arrange
+	originalEnv := map[string]string{
+		"DB_HOST":     os.Getenv("DB_HOST"),
+		"DB_PORT":     os.Getenv("DB_PORT"),
+		"DB_USER":     os.Getenv("DB_USER"),
+		"DB_PASSWORD": os.Getenv("DB_PASSWORD"),
+		"DB_NAME":     os.Getenv("DB_NAME"),
+	}
+
+	t.Cleanup(func() {
+		for key, value := range originalEnv {
+			if err := os.Setenv(key, value); err != nil {
+				t.Fatal(err)
+			}
+		}
+	})
+
+	envVars := map[string]string{
+		"DB_HOST":     "invalid_host",
+		"DB_PORT":     "5432",
+		"DB_USER":     "postgres",
+		"DB_PASSWORD": "postgres",
+		"DB_NAME":     "crime_map",
+	}
+
+	for key, value := range envVars {
+		if err := os.Setenv(key, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Act
+	db, err := database.NewPostgresDB()
+
+	// Assert
+	assert.Error(t, err)
+	assert.Nil(t, db)
 }

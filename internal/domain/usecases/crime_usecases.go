@@ -15,11 +15,11 @@ type CreateCrimeInput struct {
 	Latitude      float64
 	Longitude     float64
 	Address       string
-	AddressNumber *string
-	City          *string
-	Province      *string
-	Country       *string
-	ZipCode       *string
+	AddressNumber string
+	City          string
+	Province      string
+	Country       string
+	ZipCode       string
 }
 
 // CreateCrimeUseCase define la interfaz para crear delitos
@@ -44,7 +44,7 @@ type ListCrimesUseCase interface {
 
 // UpdateCrimeStatusInput representa los datos de entrada para actualizar el estado de un delito
 type UpdateCrimeStatusInput struct {
-	ID     string
+	UUID   string
 	Status string
 }
 
@@ -55,7 +55,15 @@ type UpdateCrimeStatusUseCase interface {
 
 // DeleteCrimeUseCase define la interfaz para eliminar delitos
 type DeleteCrimeUseCase interface {
-	Execute(ctx context.Context, id string) error
+	Execute(ctx context.Context, uuid string) error
+}
+
+// GetCrimeStatsParams representa los parámetros para obtener estadísticas de delitos
+type GetCrimeStatsParams struct {
+	StartDate *time.Time
+	EndDate   *time.Time
+	Type      *string
+	Status    *string
 }
 
 // GetCrimeStatsUseCase define la interfaz para obtener estadísticas de delitos
@@ -63,7 +71,7 @@ type GetCrimeStatsUseCase interface {
 	Execute(ctx context.Context) (*entities.CrimeStats, error)
 }
 
-// GetCrimeUseCase define la interfaz para obtener un delito por ID
+// GetCrimeUseCase define la interfaz para obtener un delito por UUID
 type GetCrimeUseCase interface {
-	Execute(ctx context.Context, id string) (*entities.Crime, error)
+	Execute(ctx context.Context, uuid string) (*entities.Crime, error)
 }

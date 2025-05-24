@@ -12,10 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func strPtr(s string) *string {
-	return &s
-}
-
 func TestListCrimesUseCase_Integration(t *testing.T) {
 	// Configurar base de datos de test
 	db := database.SetupTestDB(t)
@@ -35,11 +31,11 @@ func TestListCrimesUseCase_Integration(t *testing.T) {
 			Latitude:      -34.603722,
 			Longitude:     -58.381592,
 			Address:       "Av. Corrientes",
-			AddressNumber: strPtr("1234"),
-			City:          strPtr("Buenos Aires"),
-			Province:      strPtr("Buenos Aires"),
-			Country:       strPtr("Argentina"),
-			ZipCode:       strPtr("C1043"),
+			AddressNumber: "1234",
+			City:          "Buenos Aires",
+			Province:      "CABA",
+			Country:       "Argentina",
+			ZipCode:       "C1043",
 		},
 		{
 			Title:         "Vandalismo",
@@ -48,11 +44,11 @@ func TestListCrimesUseCase_Integration(t *testing.T) {
 			Latitude:      -34.604722,
 			Longitude:     -58.382592,
 			Address:       "Av. Corrientes",
-			AddressNumber: strPtr("2345"),
-			City:          strPtr("Buenos Aires"),
-			Province:      strPtr("Buenos Aires"),
-			Country:       strPtr("Argentina"),
-			ZipCode:       strPtr("C1043"),
+			AddressNumber: "2345",
+			City:          "Buenos Aires",
+			Province:      "CABA",
+			Country:       "Argentina",
+			ZipCode:       "C1043",
 		},
 		{
 			Title:         "Hurto",
@@ -61,11 +57,11 @@ func TestListCrimesUseCase_Integration(t *testing.T) {
 			Latitude:      -34.605722,
 			Longitude:     -58.383592,
 			Address:       "Av. Corrientes",
-			AddressNumber: strPtr("3456"),
-			City:          strPtr("Buenos Aires"),
-			Province:      strPtr("Buenos Aires"),
-			Country:       strPtr("Argentina"),
-			ZipCode:       strPtr("C1043"),
+			AddressNumber: "3456",
+			City:          "Buenos Aires",
+			Province:      "CABA",
+			Country:       "Argentina",
+			ZipCode:       "C1043",
 		},
 	}
 
@@ -108,7 +104,11 @@ func TestListCrimesUseCase_Integration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			// (No hay preparación adicional, pero se deja el comentario para el linter)
+			// Act
 			result, err := useCase.Execute(context.Background(), tt.params)
+			// Assert
 			assert.NoError(t, err)
 			assert.NotNil(t, result)
 			assert.Len(t, result.Items, tt.expectedCount)
@@ -122,7 +122,7 @@ func TestListCrimesUseCase_Integration(t *testing.T) {
 				assert.NotZero(t, crime.Location.Longitude)
 				assert.NotEmpty(t, crime.Location.Address)
 				assert.NotNil(t, crime.Location.AddressNumber)
-				assert.NotEmpty(t, *crime.Location.AddressNumber)
+				assert.NotEmpty(t, crime.Location.AddressNumber)
 				assert.NotZero(t, crime.CreatedAt)
 				assert.NotZero(t, crime.UpdatedAt)
 			}

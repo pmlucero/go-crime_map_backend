@@ -3,12 +3,14 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
 	"go-crime_map_backend/internal/domain/entities"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -26,26 +28,34 @@ func NewPostgresCrimeRepository(db *sqlx.DB) *PostgresCrimeRepository {
 
 // Create crea un nuevo delito
 func (r *PostgresCrimeRepository) Create(ctx context.Context, crime *entities.Crime) error {
+	crime.UUID = uuid.New().String()
+	crime.CreatedAt = time.Now()
+	crime.UpdatedAt = time.Now()
+	crime.Status = string(entities.CrimeStatusActive)
+
 	query := `
 		INSERT INTO crimes (
-			id, title, description, crime_type, status,
-			latitude, longitude, address, address_number, city, province, country, zip_code,
+			uuid, title, crime_type, description, latitude, longitude, status, 
+			address, address_number, city, province, country, zip_code,
 			created_at, updated_at
-		) VALUES (
-			$1, $2, $3, $4, $5,
-			$6, $7, $8, $9, $10, $11, $12, $13,
+		)
+		VALUES (
+			$1, $2, $3, $4, $5, $6, $7, 
+			$8, $9, $10, $11, $12, $13,
 			$14, $15
 		)
-	`
+		RETURNING id`
 
-	_, err := r.db.ExecContext(ctx, query,
-		crime.ID,
+	err := r.db.QueryRowContext(
+		ctx,
+		query,
+		crime.UUID,
 		crime.Title,
-		crime.Description,
 		crime.Type,
-		crime.Status,
+		crime.Description,
 		crime.Location.Latitude,
 		crime.Location.Longitude,
+		crime.Status,
 		crime.Location.Address,
 		crime.Location.AddressNumber,
 		crime.Location.City,
@@ -54,7 +64,7 @@ func (r *PostgresCrimeRepository) Create(ctx context.Context, crime *entities.Cr
 		crime.Location.ZipCode,
 		crime.CreatedAt,
 		crime.UpdatedAt,
-	)
+	).Scan(&crime.ID)
 
 	if err != nil {
 		return fmt.Errorf("error al crear el delito: %w", err)
@@ -65,7 +75,7 @@ func (r *PostgresCrimeRepository) Create(ctx context.Context, crime *entities.Cr
 
 // List obtiene una lista paginada de delitos
 func (r *PostgresCrimeRepository) List(ctx context.Context, page, limit int, startDate, endDate *time.Time, crimeType, status *string) ([]entities.Crime, int64, error) {
-	query := `SELECT id, title, description, crime_type as type, status, latitude, longitude, address, address_number, city, province, country, zip_code, created_at, updated_at FROM crimes WHERE deleted_at IS NULL`
+	query := `SELECT id, uuid, title, description, crime_type as type, status, latitude, longitude, address, address_number, city, province, country, zip_code, created_at, updated_at FROM crimes WHERE deleted_at IS NULL`
 	args := []interface{}{}
 
 	// Agregar filtros
@@ -94,7 +104,7 @@ func (r *PostgresCrimeRepository) List(ctx context.Context, page, limit int, sta
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var crimes []entities.Crime
 	for rows.Next() {
@@ -102,6 +112,7 @@ func (r *PostgresCrimeRepository) List(ctx context.Context, page, limit int, sta
 		var addressNumber, city, province, country, zipCode sql.NullString
 		err := rows.Scan(
 			&crime.ID,
+			&crime.UUID,
 			&crime.Title,
 			&crime.Description,
 			&crime.Type,
@@ -122,19 +133,19 @@ func (r *PostgresCrimeRepository) List(ctx context.Context, page, limit int, sta
 		}
 
 		if addressNumber.Valid {
-			crime.Location.AddressNumber = &addressNumber.String
+			crime.Location.AddressNumber = addressNumber.String
 		}
 		if city.Valid {
-			crime.Location.City = &city.String
+			crime.Location.City = city.String
 		}
 		if province.Valid {
-			crime.Location.Province = &province.String
+			crime.Location.Province = province.String
 		}
 		if country.Valid {
-			crime.Location.Country = &country.String
+			crime.Location.Country = country.String
 		}
 		if zipCode.Valid {
-			crime.Location.ZipCode = &zipCode.String
+			crime.Location.ZipCode = zipCode.String
 		}
 
 		crimes = append(crimes, crime)
@@ -170,80 +181,66 @@ func (r *PostgresCrimeRepository) List(ctx context.Context, page, limit int, sta
 	return crimes, total, nil
 }
 
-// GetByID obtiene un delito por su ID
-func (r *PostgresCrimeRepository) GetByID(ctx context.Context, id string) (*entities.Crime, error) {
+// GetByID obtiene un delito por su ID numérico
+func (r *PostgresCrimeRepository) GetByID(ctx context.Context, id int64) (*entities.Crime, error) {
+	crime := &entities.Crime{}
 	query := `
-		SELECT 
-			id, title, description, crime_type, status,
-			latitude as "location.latitude",
-			longitude as "location.longitude",
-			address as "location.address",
-			address_number as "location.address_number",
-			city as "location.city",
-			province as "location.province",
-			country as "location.country",
-			zip_code as "location.zip_code",
-			created_at, updated_at, deleted_at
+		SELECT id, uuid, type, description, latitude, longitude, status, created_at, updated_at, deleted_at
 		FROM crimes
-		WHERE id = $1 AND deleted_at IS NULL
-	`
+		WHERE id = $1`
 
-	var crime entities.Crime
-	err := r.db.GetContext(ctx, &crime, query, id)
+	err := r.db.GetContext(ctx, crime, query, id)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("delito no encontrado con ID %d", id)
+		}
 		return nil, fmt.Errorf("error al obtener el delito: %w", err)
 	}
 
-	// Mapear los campos de la ubicación
-	crime.Location = entities.Location{
-		Latitude:      crime.Location.Latitude,
-		Longitude:     crime.Location.Longitude,
-		Address:       crime.Location.Address,
-		AddressNumber: crime.Location.AddressNumber,
-		City:          crime.Location.City,
-		Province:      crime.Location.Province,
-		Country:       crime.Location.Country,
-		ZipCode:       crime.Location.ZipCode,
+	return crime, nil
+}
+
+// GetByUUID obtiene un delito por su UUID
+func (r *PostgresCrimeRepository) GetByUUID(ctx context.Context, uuid string) (*entities.Crime, error) {
+	crime := &entities.Crime{}
+	query := `
+		SELECT id, uuid, title, description, crime_type as type, status, 
+			   latitude, longitude, address, address_number, city, province, country, zip_code,
+			   created_at, updated_at, deleted_at
+		FROM crimes
+		WHERE uuid = $1`
+
+	err := r.db.GetContext(ctx, crime, query, uuid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("delito no encontrado con UUID %s", uuid)
+		}
+		return nil, fmt.Errorf("error al obtener el delito: %w", err)
 	}
 
-	return &crime, nil
+	return crime, nil
 }
 
 // Update actualiza un delito existente
 func (r *PostgresCrimeRepository) Update(ctx context.Context, crime *entities.Crime) error {
+	crime.UpdatedAt = time.Now()
+
 	query := `
 		UPDATE crimes
-		SET 
-			title = $1,
-			description = $2,
-			crime_type = $3,
-			status = $4,
-			latitude = $5,
-			longitude = $6,
-			address = $7,
-			address_number = $8,
-			city = $9,
-			province = $10,
-			country = $11,
-			zip_code = $12,
-			updated_at = $13
-		WHERE id = $14 AND deleted_at IS NULL
-	`
+		SET title = $1, crime_type = $2, description = $3, latitude = $4, longitude = $5, 
+		    status = $6, updated_at = $7
+		WHERE id = $8 AND deleted_at IS NULL`
 
-	result, err := r.db.ExecContext(ctx, query,
+	result, err := r.db.ExecContext(
+		ctx,
+		query,
 		crime.Title,
-		crime.Description,
 		crime.Type,
-		crime.Status,
+		crime.Description,
 		crime.Location.Latitude,
 		crime.Location.Longitude,
-		crime.Location.Address,
-		crime.Location.AddressNumber,
-		crime.Location.City,
-		crime.Location.Province,
-		crime.Location.Country,
-		crime.Location.ZipCode,
-		time.Now(),
+		crime.Status,
+		crime.UpdatedAt,
 		crime.ID,
 	)
 
@@ -251,41 +248,37 @@ func (r *PostgresCrimeRepository) Update(ctx context.Context, crime *entities.Cr
 		return fmt.Errorf("error al actualizar el delito: %w", err)
 	}
 
-	rows, err := result.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("error al obtener filas afectadas: %w", err)
+		return fmt.Errorf("error al obtener las filas afectadas: %w", err)
 	}
 
-	if rows == 0 {
-		return fmt.Errorf("delito no encontrado")
+	if rowsAffected == 0 {
+		return errors.New("no se encontró el delito para actualizar")
 	}
 
 	return nil
 }
 
-// Delete realiza una eliminación lógica de un delito
-func (r *PostgresCrimeRepository) Delete(ctx context.Context, id string) error {
+// Delete elimina un delito por su ID
+func (r *PostgresCrimeRepository) Delete(ctx context.Context, id int64) error {
 	query := `
 		UPDATE crimes
-		SET 
-			status = 'DELETED',
-			deleted_at = $1,
-			updated_at = $1
+		SET status = $1, deleted_at = NOW()
 		WHERE id = $2 AND deleted_at IS NULL
 	`
-
-	result, err := r.db.ExecContext(ctx, query, time.Now(), id)
+	result, err := r.db.ExecContext(ctx, query, "DELETED", id)
 	if err != nil {
 		return fmt.Errorf("error al eliminar el delito: %w", err)
 	}
 
-	rows, err := result.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("error al obtener filas afectadas: %w", err)
+		return fmt.Errorf("error al obtener las filas afectadas: %w", err)
 	}
 
-	if rows == 0 {
-		return fmt.Errorf("delito no encontrado")
+	if rowsAffected == 0 {
+		return errors.New("no se encontró el delito para eliminar")
 	}
 
 	return nil
@@ -371,13 +364,8 @@ func (r *PostgresCrimeRepository) GetStats(ctx context.Context) (*entities.Crime
 
 	// Calcular delitos activos e inactivos
 	var activeCrimes, inactiveCrimes int64
-	for status, count := range crimesByStatus {
-		if status == "ACTIVE" {
-			activeCrimes = count
-		} else if status == "INACTIVE" {
-			inactiveCrimes = count
-		}
-	}
+	activeCrimes = crimesByStatus["ACTIVE"]
+	inactiveCrimes = crimesByStatus["INACTIVE"]
 
 	return &entities.CrimeStats{
 		TotalCrimes:     total,

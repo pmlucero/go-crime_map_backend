@@ -7,114 +7,113 @@ import (
 	"time"
 
 	"go-crime_map_backend/internal/domain/entities"
-	"go-crime_map_backend/internal/mocks"
+	"go-crime_map_backend/internal/domain/repositories/mocks"
 	"go-crime_map_backend/internal/usecases"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDeleteCrimeUseCase_Execute(t *testing.T) {
-	mockRepo := mocks.NewMockCrimeRepository()
-	useCase := usecases.NewDeleteCrimeUseCase(mockRepo)
-
-	ctx := context.Background()
-
+	// Arrange
 	activeCrime := &entities.Crime{
-		ID:          "1",
-		Type:        "ROBO",
-		Description: "Robo a mano armada",
-		Location: entities.Location{
-			Latitude:  -34.603722,
-			Longitude: -58.381592,
-		},
-		Status:    string(entities.CrimeStatusActive),
-		CreatedAt: time.Now(),
+		ID:     1,
+		UUID:   uuid.New().String(),
+		Status: "ACTIVO",
 	}
 
 	deletedCrime := &entities.Crime{
-		ID:          "2",
-		Type:        "ASALTO",
-		Description: "Asalto a comercio",
-		Location: entities.Location{
-			Latitude:  -34.608722,
-			Longitude: -58.382592,
-		},
-		Status:    string(entities.CrimeStatusDeleted),
-		CreatedAt: time.Now(),
+		ID:        2,
+		UUID:      uuid.New().String(),
+		Status:    "DELETED",
+		DeletedAt: &time.Time{},
 	}
 
-	tests := []struct {
-		name          string
-		id            string
-		mockSetup     func()
-		expectedError string
-	}{
+	type test struct {
+		name     string
+		uuid     string
+		wantErr  bool
+		errMsg   string
+		mockFunc func(repo *mocks.CrimeRepository)
+	}
+
+	tests := []test{
 		{
-			name:          "Error - ID vacío",
-			id:            "",
-			mockSetup:     func() {},
-			expectedError: "el ID es requerido",
-		},
-		{
-			name: "Error - error al obtener el delito",
-			id:   "1",
-			mockSetup: func() {
-				mockRepo.On("GetByID", ctx, "1").Return(nil, errors.New("error de base de datos"))
+			name:    "Error - UUID vacío",
+			uuid:    "",
+			wantErr: true,
+			errMsg:  "el UUID es requerido",
+			mockFunc: func(repo *mocks.CrimeRepository) {
+				// No se espera ninguna llamada al repositorio
 			},
-			expectedError: "error al obtener el delito: error de base de datos",
 		},
 		{
-			name: "Error - delito no encontrado",
-			id:   "1",
-			mockSetup: func() {
-				mockRepo.On("GetByID", ctx, "1").Return(nil, nil)
+			name:    "Error - error al obtener el delito",
+			uuid:    activeCrime.UUID,
+			wantErr: true,
+			errMsg:  "error al obtener el delito",
+			mockFunc: func(repo *mocks.CrimeRepository) {
+				repo.EXPECT().GetByUUID(context.Background(), activeCrime.UUID).Return(nil, errors.New("error al obtener el delito"))
 			},
-			expectedError: "delito no encontrado",
 		},
 		{
-			name: "Error - delito ya eliminado",
-			id:   "2",
-			mockSetup: func() {
-				mockRepo.On("GetByID", ctx, "2").Return(deletedCrime, nil)
+			name:    "Error - delito no encontrado",
+			uuid:    activeCrime.UUID,
+			wantErr: true,
+			errMsg:  "delito no encontrado",
+			mockFunc: func(repo *mocks.CrimeRepository) {
+				repo.EXPECT().GetByUUID(context.Background(), activeCrime.UUID).Return(nil, nil)
 			},
-			expectedError: "el delito ya fue eliminado",
 		},
 		{
-			name: "Error - error al eliminar el delito",
-			id:   "1",
-			mockSetup: func() {
-				mockRepo.On("GetByID", ctx, "1").Return(activeCrime, nil)
-				mockRepo.On("Delete", ctx, "1").Return(errors.New("error al eliminar"))
+			name:    "Error - delito ya eliminado",
+			uuid:    deletedCrime.UUID,
+			wantErr: true,
+			errMsg:  "el delito ya fue eliminado",
+			mockFunc: func(repo *mocks.CrimeRepository) {
+				repo.EXPECT().GetByUUID(context.Background(), deletedCrime.UUID).Return(deletedCrime, nil)
 			},
-			expectedError: "error al eliminar el delito: error al eliminar",
 		},
 		{
-			name: "Eliminar delito exitosamente",
-			id:   "1",
-			mockSetup: func() {
-				mockRepo.On("GetByID", ctx, "1").Return(activeCrime, nil)
-				mockRepo.On("Delete", ctx, "1").Return(nil)
+			name:    "Error - error al eliminar el delito",
+			uuid:    activeCrime.UUID,
+			wantErr: true,
+			errMsg:  "error al eliminar el delito",
+			mockFunc: func(repo *mocks.CrimeRepository) {
+				repo.EXPECT().GetByUUID(context.Background(), activeCrime.UUID).Return(activeCrime, nil)
+				repo.EXPECT().Delete(context.Background(), activeCrime.ID).Return(errors.New("error al eliminar el delito"))
+			},
+		},
+		{
+			name:    "Eliminar delito exitosamente",
+			uuid:    activeCrime.UUID,
+			wantErr: false,
+			errMsg:  "",
+			mockFunc: func(repo *mocks.CrimeRepository) {
+				repo.EXPECT().GetByUUID(context.Background(), activeCrime.UUID).Return(activeCrime, nil)
+				repo.EXPECT().Delete(context.Background(), activeCrime.ID).Return(nil)
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Limpiar mock y configurar para este test
-			mockRepo.ExpectedCalls = nil
-			mockRepo.Calls = nil
-			tt.mockSetup()
+			// Arrange
+			mockRepo := mocks.NewCrimeRepository(t)
+			tt.mockFunc(mockRepo)
 
-			err := useCase.Execute(ctx, tt.id)
+			useCase := usecases.NewDeleteCrimeUseCase(mockRepo)
 
-			if tt.expectedError != "" {
+			// Act
+			err := useCase.Execute(context.Background(), tt.uuid)
+
+			// Assert
+			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Equal(t, tt.expectedError, err.Error())
-				return
+				assert.Contains(t, err.Error(), tt.errMsg)
+			} else {
+				assert.NoError(t, err)
 			}
-
-			assert.NoError(t, err)
-			mockRepo.AssertExpectations(t)
 		})
 	}
 }

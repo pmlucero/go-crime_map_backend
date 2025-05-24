@@ -21,14 +21,14 @@ func NewGetCrimeUseCase(repo repositories.CrimeRepository) *GetCrimeUseCase {
 }
 
 // Execute ejecuta el caso de uso
-func (uc *GetCrimeUseCase) Execute(ctx context.Context, id string) (*entities.Crime, error) {
-	// Validar que el ID no esté vacío
-	if id == "" {
-		return nil, fmt.Errorf("el ID del delito es requerido")
+func (uc *GetCrimeUseCase) Execute(ctx context.Context, uuid string) (*entities.Crime, error) {
+	// Validar que el UUID no esté vacío
+	if uuid == "" {
+		return nil, fmt.Errorf("el UUID del delito es requerido")
 	}
 
 	// Obtener el delito del repositorio
-	crime, err := uc.crimeRepository.GetByID(ctx, id)
+	crime, err := uc.crimeRepository.GetByUUID(ctx, uuid)
 	if err != nil {
 		return nil, fmt.Errorf("error al obtener el delito: %w", err)
 	}
