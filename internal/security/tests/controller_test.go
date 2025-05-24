@@ -3,6 +3,7 @@ package security_test
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"go-crime_map_backend/internal/domain/entities"
 	"go-crime_map_backend/internal/security"
@@ -14,16 +15,49 @@ import (
 
 // coverage: 85%
 
-func setupTestController(t *testing.T) (*security.Controller, *security.Repository) {
+func setupTestController(t *testing.T) (*security.Controller, *security.Repository, *sql.DB) {
 	db := setupTestDB(t)
+	// Crear tabla users
+	_, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS users (
+			id VARCHAR(255) PRIMARY KEY,
+			username VARCHAR(255) NOT NULL UNIQUE,
+			email VARCHAR(255) NOT NULL UNIQUE,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)
+	`)
+	if err != nil {
+		t.Fatalf("error creando tabla users: %v", err)
+	}
+	// Insertar usuario de prueba
+	_, err = db.Exec(`
+		INSERT OR IGNORE INTO users (id, username, email) VALUES ('test-user', 'testuser', 'testuser@example.com')
+	`)
+	if err != nil {
+		t.Fatalf("error insertando usuario de prueba: %v", err)
+	}
+	// Crear la tabla api_keys igual que en migraciones
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS api_keys (
+			key VARCHAR(255) PRIMARY KEY,
+			user_id VARCHAR(255) NOT NULL,
+			is_active BOOLEAN NOT NULL DEFAULT true,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			expires_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		)
+	`)
+	if err != nil {
+		t.Fatalf("error creando tabla api_keys: %v", err)
+	}
 	repo := security.NewRepository(db)
 	controller := security.NewController(repo)
-	return controller, repo
+	return controller, repo, db
 }
 
 func TestController_GenerateAPIKey(t *testing.T) {
 	// Arrange
-	controller, _ := setupTestController(t)
+	controller, _, _ := setupTestController(t)
 	reqBody := map[string]string{
 		"user_id": "test-user",
 	}
@@ -54,21 +88,25 @@ func TestController_GenerateAPIKey(t *testing.T) {
 
 func TestController_RevokeAPIKey(t *testing.T) {
 	// Arrange
-	controller, repo := setupTestController(t)
+	controller, repo, db := setupTestController(t)
 	ctx := context.Background()
 
 	// Primero creamos una API Key
 	now := time.Now()
 	apiKey := &entities.APIKey{
-		ID:        "test-user",
-		Key:       "test-key",
-		Status:    "active",
-		ExpiresAt: now.Add(24 * time.Hour),
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:           "test-user",
+		Key:          "test-key",
+		ExpiresAt:    now.Add(24 * time.Hour),
+		CreatedAt:    now,
+		UpdatedAt:    now,
+		IsActiveBool: true,
 	}
-	if err := repo.CreateAPIKey(ctx, apiKey); err != nil {
-		t.Fatalf("error creando API Key: %v", err)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO api_keys (key, user_id, is_active, created_at, expires_at)
+		VALUES (?, ?, ?, ?, ?)
+	`, apiKey.Key, apiKey.ID, apiKey.IsActiveBool, apiKey.CreatedAt, apiKey.ExpiresAt)
+	if err != nil {
+		t.Fatalf("error insertando API key: %v", err)
 	}
 
 	req := httptest.NewRequest("DELETE", "/api-keys?key=test-key", nil)
@@ -87,40 +125,44 @@ func TestController_RevokeAPIKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error obteniendo API Key: %v", err)
 	}
-	if storedKey.Status != "inactive" {
+	if storedKey.IsActiveBool != false {
 		t.Error("API Key no fue revocada")
 	}
 }
 
 func TestController_ListAPIKeys(t *testing.T) {
 	// Arrange
-	controller, repo := setupTestController(t)
+	controller, _, db := setupTestController(t)
 	ctx := context.Background()
 
 	// Crear algunas API Keys para el usuario
 	now := time.Now()
 	apiKeys := []*entities.APIKey{
 		{
-			ID:        "test-user-1",
-			Key:       "key1",
-			Status:    "active",
-			ExpiresAt: now.Add(24 * time.Hour),
-			CreatedAt: now,
-			UpdatedAt: now,
+			ID:           "test-user-1",
+			Key:          "key1",
+			ExpiresAt:    now.Add(24 * time.Hour),
+			CreatedAt:    now,
+			UpdatedAt:    now,
+			IsActiveBool: true,
 		},
 		{
-			ID:        "test-user-2",
-			Key:       "key2",
-			Status:    "active",
-			ExpiresAt: now.Add(24 * time.Hour),
-			CreatedAt: now,
-			UpdatedAt: now,
+			ID:           "test-user-2",
+			Key:          "key2",
+			ExpiresAt:    now.Add(24 * time.Hour),
+			CreatedAt:    now,
+			UpdatedAt:    now,
+			IsActiveBool: true,
 		},
 	}
 
 	for _, key := range apiKeys {
-		if err := repo.CreateAPIKey(ctx, key); err != nil {
-			t.Fatalf("error creando API Key: %v", err)
+		_, err := db.ExecContext(ctx, `
+			INSERT INTO api_keys (key, user_id, is_active, created_at, expires_at)
+			VALUES (?, ?, ?, ?, ?)
+		`, key.Key, key.ID, key.IsActiveBool, key.CreatedAt, key.ExpiresAt)
+		if err != nil {
+			t.Fatalf("error insertando API key: %v", err)
 		}
 	}
 

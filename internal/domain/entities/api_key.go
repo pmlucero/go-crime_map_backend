@@ -4,12 +4,13 @@ import "time"
 
 // APIKey representa una clave de API
 type APIKey struct {
-	ID        string    `json:"id"`
-	Key       string    `json:"key"`
-	Status    string    `json:"status"` // active, inactive
-	ExpiresAt time.Time `json:"expires_at"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID           string    `json:"id"`
+	Key          string    `json:"key"`
+	Status       string    `json:"status"` // active, inactive
+	ExpiresAt    time.Time `json:"expires_at"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	IsActiveBool bool      `json:"is_active"`
 }
 
 // IsActive verifica si la clave de API está activa

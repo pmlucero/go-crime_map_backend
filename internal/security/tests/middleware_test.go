@@ -20,18 +20,39 @@ func setupMiddlewareTestDB(t *testing.T) *sql.DB {
 		t.Fatalf("error abriendo base de datos: %v", err)
 	}
 
+	// Crear tabla users
 	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS api_keys (
+		CREATE TABLE IF NOT EXISTS users (
 			id VARCHAR(255) PRIMARY KEY,
-			key VARCHAR(255) NOT NULL,
-			status VARCHAR(50) NOT NULL,
-			expires_at TIMESTAMP NOT NULL,
-			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+			username VARCHAR(255) NOT NULL UNIQUE,
+			email VARCHAR(255) NOT NULL UNIQUE,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)
 	`)
 	if err != nil {
-		t.Fatalf("error creando tabla: %v", err)
+		t.Fatalf("error creando tabla users: %v", err)
+	}
+
+	// Insertar usuario de prueba
+	_, err = db.Exec(`
+		INSERT OR IGNORE INTO users (id, username, email) VALUES ('test-user', 'testuser', 'testuser@example.com')
+	`)
+	if err != nil {
+		t.Fatalf("error insertando usuario de prueba: %v", err)
+	}
+
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS api_keys (
+			key VARCHAR(255) PRIMARY KEY,
+			user_id VARCHAR(255) NOT NULL,
+			is_active BOOLEAN NOT NULL DEFAULT true,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			expires_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		)
+	`)
+	if err != nil {
+		t.Fatalf("error creando tabla api_keys: %v", err)
 	}
 
 	t.Cleanup(func() {
@@ -71,19 +92,20 @@ func TestAPIKeyMiddleware_WithAPIKey(t *testing.T) {
 	repo := security.NewRepository(db)
 
 	// Crear una API key válida
+	now := time.Now()
 	apiKey := &entities.APIKey{
-		ID:        "test-id",
-		Key:       "test-key",
-		Status:    "active",
-		ExpiresAt: time.Now().Add(24 * time.Hour),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		ID:           "test-user",
+		Key:          "test-key",
+		ExpiresAt:    now.Add(24 * time.Hour),
+		CreatedAt:    now,
+		UpdatedAt:    now,
+		IsActiveBool: true,
 	}
 
 	_, err := db.Exec(`
-		INSERT INTO api_keys (id, key, status, expires_at, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?)
-	`, apiKey.ID, apiKey.Key, apiKey.Status, apiKey.ExpiresAt, apiKey.CreatedAt, apiKey.UpdatedAt)
+		INSERT INTO api_keys (key, user_id, is_active, created_at, expires_at)
+		VALUES (?, ?, ?, ?, ?)
+	`, apiKey.Key, apiKey.ID, true, apiKey.CreatedAt, apiKey.ExpiresAt)
 	if err != nil {
 		t.Fatalf("error insertando API key: %v", err)
 	}

@@ -6,12 +6,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupCrimeRoutes(router *gin.Engine, controller *controllers.CrimeController) {
-	router.POST("/crimes", controller.CreateCrime)
-	router.GET("/crimes", controller.ListCrimes)
-	router.GET("/crimes/stats", controller.GetCrimeStats)
-	router.GET("/crimes/:id", controller.GetCrime)
-	router.PATCH("/crimes/:id/status", controller.UpdateCrimeStatus)
-	router.DELETE("/crimes", controller.DeleteCrime)
-	router.DELETE("/crimes/:id", controller.DeleteCrime)
+func SetupCrimeRoutes(router *gin.Engine, controller *controllers.CrimeController, authMiddleware gin.HandlerFunc) {
+	protected := router.Group("/")
+	protected.Use(authMiddleware)
+	{
+		protected.POST("/crimes", controller.CreateCrime)
+		protected.GET("/crimes", controller.ListCrimes)
+		protected.GET("/crimes/stats", controller.GetCrimeStats)
+		protected.GET("/crimes/:id", controller.GetCrime)
+		protected.PATCH("/crimes/:id/status", controller.UpdateCrimeStatus)
+		protected.DELETE("/crimes", controller.DeleteCrime)
+		protected.DELETE("/crimes/:id", controller.DeleteCrime)
+	}
 }
