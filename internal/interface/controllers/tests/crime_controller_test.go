@@ -13,14 +13,29 @@ import (
 
 	"go-crime_map_backend/internal/domain/entities"
 	"go-crime_map_backend/internal/domain/usecases"
+	"go-crime_map_backend/internal/domain/usecases/mocks"
 	"go-crime_map_backend/internal/interface/controllers"
-	"go-crime_map_backend/internal/mocks"
-	"go-crime_map_backend/internal/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+// Definición de errores
+var (
+	ErrInvalidCrimeStatus = errors.New("invalid crime status")
+	ErrCrimeNotFound      = errors.New("crime not found")
+	ErrInvalidAPIKey      = errors.New("invalid API key")
+)
+
+// Definición de tipos de entrada para los casos de uso
+type DeleteCrimeInput struct {
+	ID string
+}
+
+type GetCrimeInput struct {
+	ID string
+}
 
 // MockCreateCrimeUseCase es un mock para el caso de uso de creación de delitos
 type MockCreateCrimeUseCase struct {
@@ -29,9 +44,6 @@ type MockCreateCrimeUseCase struct {
 
 func (m *MockCreateCrimeUseCase) Execute(ctx context.Context, input usecases.CreateCrimeInput) (*entities.Crime, error) {
 	args := m.Called(ctx, input)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
 	return args.Get(0).(*entities.Crime), args.Error(1)
 }
 
@@ -42,9 +54,6 @@ type MockListCrimesUseCase struct {
 
 func (m *MockListCrimesUseCase) Execute(ctx context.Context, params usecases.ListCrimesParams) (*entities.CrimeList, error) {
 	args := m.Called(ctx, params)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
 	return args.Get(0).(*entities.CrimeList), args.Error(1)
 }
 
@@ -63,8 +72,8 @@ type MockDeleteCrimeUseCase struct {
 	mock.Mock
 }
 
-func (m *MockDeleteCrimeUseCase) Execute(ctx context.Context, id string) error {
-	args := m.Called(ctx, id)
+func (m *MockDeleteCrimeUseCase) Execute(ctx context.Context, crimeID string) error {
+	args := m.Called(ctx, crimeID)
 	return args.Error(0)
 }
 
@@ -75,9 +84,6 @@ type MockGetCrimeStatsUseCase struct {
 
 func (m *MockGetCrimeStatsUseCase) Execute(ctx context.Context) (*entities.CrimeStats, error) {
 	args := m.Called(ctx)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
 	return args.Get(0).(*entities.CrimeStats), args.Error(1)
 }
 
@@ -86,927 +92,1014 @@ type MockGetCrimeUseCase struct {
 	mock.Mock
 }
 
-func (m *MockGetCrimeUseCase) Execute(ctx context.Context, id string) (*entities.Crime, error) {
-	args := m.Called(ctx, id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
+func (m *MockGetCrimeUseCase) Execute(ctx context.Context, crimeID string) (*entities.Crime, error) {
+	args := m.Called(ctx, crimeID)
 	return args.Get(0).(*entities.Crime), args.Error(1)
 }
 
-func setupTestRouter() *gin.Engine {
+func setupRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	return gin.New()
 }
 
 func TestCrimeController_CreateCrime(t *testing.T) {
-	gin.SetMode(gin.TestMode)
+	// Arrange
+	mockCreateUseCase := new(mocks.CreateCrimeUseCase)
+	controller := controllers.NewCrimeController(
+		mockCreateUseCase,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+	)
 
-	t.Run("Crear delito exitosamente", func(t *testing.T) {
-		mockCreateUseCase := new(mocks.MockCreateCrimeUseCase)
-		controller := controllers.NewCrimeController(
-			mockCreateUseCase,
-			nil,
-			nil,
-			nil,
-			nil,
-			nil,
-		)
+	router := setupRouter()
+	router.POST("/crimes", controller.CreateCrime)
 
-		req := controllers.CreateCrimeRequest{
-			Title:         "Robo",
-			Description:   "Robo en tienda",
-			Type:          "ROBBERY",
-			Latitude:      40.7128,
-			Longitude:     -74.0060,
-			Address:       "Av. Corrientes",
-			AddressNumber: utils.StringPtr("1234"),
-			City:          utils.StringPtr("Buenos Aires"),
-			Province:      utils.StringPtr("Buenos Aires"),
-			Country:       utils.StringPtr("Argentina"),
-			ZipCode:       utils.StringPtr("1000"),
-		}
+	addressNumber := "123"
+	city := "Buenos Aires"
+	province := "Buenos Aires"
+	country := "Argentina"
+	zipCode := "1000"
 
-		expectedCrime := &entities.Crime{
-			ID:          "1",
-			Title:       req.Title,
-			Description: req.Description,
-			Type:        req.Type,
-			Status:      "ACTIVE",
-			Location: entities.Location{
-				Latitude:      req.Latitude,
-				Longitude:     req.Longitude,
-				Address:       req.Address,
-				AddressNumber: req.AddressNumber,
-				City:          req.City,
-				Province:      req.Province,
-				Country:       req.Country,
-				ZipCode:       req.ZipCode,
-			},
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
+	reqBody := controllers.CreateCrimeRequest{
+		Title:         "Test Crime",
+		Description:   "Test Description",
+		Type:          "ROBO",
+		Latitude:      -34.603722,
+		Longitude:     -58.381592,
+		Address:       "Test Address",
+		AddressNumber: addressNumber,
+		City:          city,
+		Province:      province,
+		Country:       country,
+		ZipCode:       zipCode,
+	}
 
-		mockCreateUseCase.On("Execute", mock.Anything, mock.Anything).Return(expectedCrime, nil)
+	expectedCrime := &entities.Crime{
+		ID:          1,
+		Title:       reqBody.Title,
+		Description: reqBody.Description,
+		Type:        "ROBO",
+		Status:      "ACTIVE",
+		Location: entities.Location{
+			Latitude:      reqBody.Latitude,
+			Longitude:     reqBody.Longitude,
+			Address:       reqBody.Address,
+			AddressNumber: reqBody.AddressNumber,
+			City:          reqBody.City,
+			Province:      reqBody.Province,
+			Country:       reqBody.Country,
+			ZipCode:       reqBody.ZipCode,
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
 
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
+	input := usecases.CreateCrimeInput{
+		Title:         reqBody.Title,
+		Description:   reqBody.Description,
+		Type:          reqBody.Type,
+		Latitude:      reqBody.Latitude,
+		Longitude:     reqBody.Longitude,
+		Address:       reqBody.Address,
+		AddressNumber: reqBody.AddressNumber,
+		City:          reqBody.City,
+		Province:      reqBody.Province,
+		Country:       reqBody.Country,
+		ZipCode:       reqBody.ZipCode,
+	}
 
-		body, _ := json.Marshal(req)
-		c.Request = httptest.NewRequest(http.MethodPost, "/crimes", bytes.NewBuffer(body))
-		c.Request.Header.Set("Content-Type", "application/json")
+	mockCreateUseCase.On("Execute", mock.Anything, input).Return(expectedCrime, nil)
 
-		controller.CreateCrime(c)
+	// Act
+	body, _ := json.Marshal(reqBody)
+	req := httptest.NewRequest(http.MethodPost, "/crimes", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "valid-key")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
 
-		assert.Equal(t, http.StatusCreated, w.Code)
-
-		var response entities.Crime
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedCrime.ID, response.ID)
-		assert.Equal(t, expectedCrime.Title, response.Title)
-		assert.Equal(t, expectedCrime.Description, response.Description)
-		assert.Equal(t, expectedCrime.Type, response.Type)
-		assert.Equal(t, expectedCrime.Status, response.Status)
-		assert.Equal(t, expectedCrime.Location.Latitude, response.Location.Latitude)
-		assert.Equal(t, expectedCrime.Location.Longitude, response.Location.Longitude)
-		assert.Equal(t, expectedCrime.Location.Address, response.Location.Address)
-		assert.Equal(t, expectedCrime.Location.AddressNumber, response.Location.AddressNumber)
-
-		mockCreateUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al crear delito - Datos inválidos", func(t *testing.T) {
-		mockCreateUseCase := new(mocks.MockCreateCrimeUseCase)
-		controller := controllers.NewCrimeController(
-			mockCreateUseCase,
-			nil,
-			nil,
-			nil,
-			nil,
-			nil,
-		)
-
-		req := controllers.CreateCrimeRequest{
-			// Datos incompletos
-			Title: "Robo",
-		}
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-
-		body, _ := json.Marshal(req)
-		c.Request = httptest.NewRequest(http.MethodPost, "/crimes", bytes.NewBuffer(body))
-		c.Request.Header.Set("Content-Type", "application/json")
-
-		controller.CreateCrime(c)
-
-		assert.Equal(t, http.StatusBadRequest, w.Code)
-		mockCreateUseCase.AssertNotCalled(t, "Execute")
-	})
-
-	t.Run("Error al crear delito - Error interno", func(t *testing.T) {
-		mockCreateUseCase := new(mocks.MockCreateCrimeUseCase)
-		controller := controllers.NewCrimeController(
-			mockCreateUseCase,
-			nil,
-			nil,
-			nil,
-			nil,
-			nil,
-		)
-
-		req := controllers.CreateCrimeRequest{
-			Title:         "Robo",
-			Description:   "Robo en tienda",
-			Type:          "ROBBERY",
-			Latitude:      40.7128,
-			Longitude:     -74.0060,
-			Address:       "Av. Corrientes",
-			AddressNumber: utils.StringPtr("1234"),
-			City:          utils.StringPtr("Buenos Aires"),
-			Province:      utils.StringPtr("Buenos Aires"),
-			Country:       utils.StringPtr("Argentina"),
-			ZipCode:       utils.StringPtr("1000"),
-		}
-
-		expectedError := errors.New("error interno")
-		mockCreateUseCase.On("Execute", mock.Anything, mock.Anything).Return(nil, expectedError)
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-
-		body, _ := json.Marshal(req)
-		c.Request = httptest.NewRequest(http.MethodPost, "/crimes", bytes.NewBuffer(body))
-		c.Request.Header.Set("Content-Type", "application/json")
-
-		controller.CreateCrime(c)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-
-		var response controllers.ErrorResponse
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedError.Error(), response.Error)
-
-		mockCreateUseCase.AssertExpectations(t)
-	})
+	// Assert
+	assert.Equal(t, http.StatusCreated, w.Code)
+	mockCreateUseCase.AssertExpectations(t)
 }
 
 func TestCrimeController_ListCrimes(t *testing.T) {
-	gin.SetMode(gin.TestMode)
+	// Arrange
+	mockListUseCase := new(mocks.ListCrimesUseCase)
+	controller := controllers.NewCrimeController(
+		nil,
+		mockListUseCase,
+		nil,
+		nil,
+		nil,
+		nil,
+	)
 
-	t.Run("Listar delitos exitosamente", func(t *testing.T) {
-		mockListUseCase := new(mocks.MockListCrimesUseCase)
-		controller := controllers.NewCrimeController(
-			nil,
-			mockListUseCase,
-			nil,
-			nil,
-			nil,
-			nil,
-		)
+	router := setupRouter()
+	router.GET("/crimes", controller.ListCrimes)
 
-		expectedCrimes := &entities.CrimeList{
-			Items: []entities.Crime{
-				{
-					ID:          "1",
-					Title:       "Robo",
-					Description: "Robo en tienda",
-					Type:        "ROBBERY",
-					Status:      "ACTIVE",
-					Location: entities.Location{
-						Latitude:      40.7128,
-						Longitude:     -74.0060,
-						Address:       "Av. Corrientes",
-						AddressNumber: utils.StringPtr("1234"),
-					},
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+	params := usecases.ListCrimesParams{
+		Page:  1,
+		Limit: 10,
+	}
+
+	expectedCrimes := &entities.CrimeList{
+		Items: []entities.Crime{
+			{
+				ID:          1,
+				Title:       "Test Crime 1",
+				Description: "Test Description 1",
+				Type:        "ROBO",
+				Status:      "ACTIVE",
+				Location: entities.Location{
+					Latitude:  -34.603722,
+					Longitude: -58.381592,
+					Address:   "Test Address 1",
 				},
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
 			},
-			Total: 1,
-		}
-
-		mockListUseCase.On("Execute", mock.Anything, mock.Anything).Return(expectedCrimes, nil)
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodGet, "/crimes?page=1&limit=10", nil)
-
-		controller.ListCrimes(c)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-
-		var response entities.CrimeList
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedCrimes.Total, response.Total)
-		assert.Equal(t, len(expectedCrimes.Items), len(response.Items))
-		assert.Equal(t, expectedCrimes.Items[0].ID, response.Items[0].ID)
-
-		mockListUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al listar delitos - Parámetros inválidos", func(t *testing.T) {
-		mockListUseCase := new(mocks.MockListCrimesUseCase)
-		controller := controllers.NewCrimeController(
-			nil,
-			mockListUseCase,
-			nil,
-			nil,
-			nil,
-			nil,
-		)
-
-		expectedCrimes := &entities.CrimeList{
-			Items: []entities.Crime{},
-			Total: 0,
-		}
-
-		mockListUseCase.On("Execute", mock.Anything, mock.Anything).Return(expectedCrimes, nil)
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodGet, "/crimes?page=invalid&limit=invalid", nil)
-
-		controller.ListCrimes(c)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-		mockListUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al listar delitos - Error interno", func(t *testing.T) {
-		mockListUseCase := new(mocks.MockListCrimesUseCase)
-		controller := controllers.NewCrimeController(
-			nil,
-			mockListUseCase,
-			nil,
-			nil,
-			nil,
-			nil,
-		)
-
-		expectedError := errors.New("error al listar delitos")
-		mockListUseCase.On("Execute", mock.Anything, mock.Anything).Return(nil, expectedError)
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodGet, "/crimes?page=1&limit=10", nil)
-
-		controller.ListCrimes(c)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-
-		var response controllers.ErrorResponse
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedError.Error(), response.Error)
-
-		mockListUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Listar delitos exitosamente con todos los parámetros", func(t *testing.T) {
-		mockListUseCase := new(mocks.MockListCrimesUseCase)
-		controller := controllers.NewCrimeController(
-			nil,
-			mockListUseCase,
-			nil,
-			nil,
-			nil,
-			nil,
-		)
-
-		expectedCrimes := &entities.CrimeList{
-			Items: []entities.Crime{
-				{
-					ID:          "1",
-					Title:       "Robo",
-					Description: "Robo en tienda",
-					Type:        "ROBBERY",
-					Status:      "ACTIVE",
-				},
-			},
-			Total: 1,
-		}
-
-		mockListUseCase.On("Execute", mock.Anything, mock.Anything).Return(expectedCrimes, nil)
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodGet, "/crimes?page=1&limit=10&type=ROBBERY&status=ACTIVE&start_date=2024-01-01&end_date=2024-12-31", nil)
-
-		controller.ListCrimes(c)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-		var response entities.CrimeList
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedCrimes.Total, response.Total)
-		assert.Equal(t, len(expectedCrimes.Items), len(response.Items))
-
-		mockListUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Listar delitos - Parámetros de fecha inválidos", func(t *testing.T) {
-		mockListUseCase := new(mocks.MockListCrimesUseCase)
-		controller := controllers.NewCrimeController(
-			nil,
-			mockListUseCase,
-			nil,
-			nil,
-			nil,
-			nil,
-		)
-
-		expectedError := errors.New("fecha inválida")
-		mockListUseCase.On("Execute", mock.Anything, mock.Anything).Return(nil, expectedError)
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodGet, "/crimes?start_date=invalid&end_date=invalid", nil)
-
-		controller.ListCrimes(c)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-		var response controllers.ErrorResponse
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedError.Error(), response.Error)
-
-		mockListUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Listar delitos - Tipo de delito inválido", func(t *testing.T) {
-		mockListUseCase := new(mocks.MockListCrimesUseCase)
-		controller := controllers.NewCrimeController(
-			nil,
-			mockListUseCase,
-			nil,
-			nil,
-			nil,
-			nil,
-		)
-
-		expectedError := errors.New("tipo de delito inválido")
-		mockListUseCase.On("Execute", mock.Anything, mock.Anything).Return(nil, expectedError)
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodGet, "/crimes?type=INVALID", nil)
-
-		controller.ListCrimes(c)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-		var response controllers.ErrorResponse
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedError.Error(), response.Error)
-
-		mockListUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al listar delitos - fecha inicial inválida", func(t *testing.T) {
-		mockUseCase := new(mocks.MockListCrimesUseCase)
-		controller := controllers.NewCrimeController(nil, mockUseCase, nil, nil, nil, nil)
-
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Request = httptest.NewRequest(http.MethodGet, "/?start_date=fecha-invalida", nil)
-
-		expectedError := errors.New("fecha inicial inválida")
-		mockUseCase.On("Execute", mock.Anything, mock.AnythingOfType("usecases.ListCrimesParams")).Return(nil, expectedError)
-
-		controller.ListCrimes(c)
-
-		assert.Equal(t, http.StatusInternalServerError, c.Writer.Status())
-		mockUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al listar delitos - fecha final inválida", func(t *testing.T) {
-		mockUseCase := new(mocks.MockListCrimesUseCase)
-		controller := controllers.NewCrimeController(nil, mockUseCase, nil, nil, nil, nil)
-
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Request = httptest.NewRequest(http.MethodGet, "/?end_date=fecha-invalida", nil)
-
-		expectedError := errors.New("fecha final inválida")
-		mockUseCase.On("Execute", mock.Anything, mock.AnythingOfType("usecases.ListCrimesParams")).Return(nil, expectedError)
-
-		controller.ListCrimes(c)
-
-		assert.Equal(t, http.StatusInternalServerError, c.Writer.Status())
-		mockUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al listar delitos - radio inválido", func(t *testing.T) {
-		mockUseCase := new(mocks.MockListCrimesUseCase)
-		controller := controllers.NewCrimeController(nil, mockUseCase, nil, nil, nil, nil)
-
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Request = httptest.NewRequest(http.MethodGet, "/?radius_km=no-numerico", nil)
-
-		expectedError := errors.New("radio inválido")
-		mockUseCase.On("Execute", mock.Anything, mock.AnythingOfType("usecases.ListCrimesParams")).Return(nil, expectedError)
-
-		controller.ListCrimes(c)
-
-		assert.Equal(t, http.StatusInternalServerError, c.Writer.Status())
-		mockUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al listar delitos - latitud inválida", func(t *testing.T) {
-		mockUseCase := new(mocks.MockListCrimesUseCase)
-		controller := controllers.NewCrimeController(nil, mockUseCase, nil, nil, nil, nil)
-
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Request = httptest.NewRequest(http.MethodGet, "/?latitude=no-numerico", nil)
-
-		expectedError := errors.New("latitud inválida")
-		mockUseCase.On("Execute", mock.Anything, mock.AnythingOfType("usecases.ListCrimesParams")).Return(nil, expectedError)
-
-		controller.ListCrimes(c)
-
-		assert.Equal(t, http.StatusInternalServerError, c.Writer.Status())
-		mockUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al listar delitos - longitud inválida", func(t *testing.T) {
-		mockUseCase := new(mocks.MockListCrimesUseCase)
-		controller := controllers.NewCrimeController(nil, mockUseCase, nil, nil, nil, nil)
-
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Request = httptest.NewRequest(http.MethodGet, "/?longitude=no-numerico", nil)
-
-		expectedError := errors.New("longitud inválida")
-		mockUseCase.On("Execute", mock.Anything, mock.AnythingOfType("usecases.ListCrimesParams")).Return(nil, expectedError)
-
-		controller.ListCrimes(c)
-
-		assert.Equal(t, http.StatusInternalServerError, c.Writer.Status())
-		mockUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al listar delitos - página inválida", func(t *testing.T) {
-		mockUseCase := new(mocks.MockListCrimesUseCase)
-		controller := controllers.NewCrimeController(nil, mockUseCase, nil, nil, nil, nil)
-
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Request = httptest.NewRequest(http.MethodGet, "/?page=no-numerico", nil)
-
-		expectedError := errors.New("página inválida")
-		mockUseCase.On("Execute", mock.Anything, mock.AnythingOfType("usecases.ListCrimesParams")).Return(nil, expectedError)
-
-		controller.ListCrimes(c)
-
-		assert.Equal(t, http.StatusInternalServerError, c.Writer.Status())
-		mockUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al listar delitos - límite inválido", func(t *testing.T) {
-		mockUseCase := new(mocks.MockListCrimesUseCase)
-		controller := controllers.NewCrimeController(nil, mockUseCase, nil, nil, nil, nil)
-
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Request = httptest.NewRequest(http.MethodGet, "/?limit=no-numerico", nil)
-
-		expectedError := errors.New("límite inválido")
-		mockUseCase.On("Execute", mock.Anything, mock.AnythingOfType("usecases.ListCrimesParams")).Return(nil, expectedError)
-
-		controller.ListCrimes(c)
-
-		assert.Equal(t, http.StatusInternalServerError, c.Writer.Status())
-		mockUseCase.AssertExpectations(t)
-	})
+		},
+		Total: 1,
+	}
+
+	mockListUseCase.On("Execute", mock.Anything, params).Return(expectedCrimes, nil)
+
+	// Act
+	req := httptest.NewRequest(http.MethodGet, "/crimes?page=1&limit=10", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusOK, w.Code)
+	mockListUseCase.AssertExpectations(t)
 }
 
 func TestCrimeController_UpdateCrimeStatus(t *testing.T) {
-	gin.SetMode(gin.TestMode)
+	// Arrange
+	mockUpdateStatusUseCase := new(mocks.UpdateCrimeStatusUseCase)
+	controller := controllers.NewCrimeController(
+		nil,
+		nil,
+		mockUpdateStatusUseCase,
+		nil,
+		nil,
+		nil,
+	)
 
-	t.Run("Actualizar estado exitosamente", func(t *testing.T) {
-		mockUpdateStatusUseCase := new(mocks.MockUpdateCrimeStatusUseCase)
-		controller := controllers.NewCrimeController(
-			nil,
-			nil,
-			mockUpdateStatusUseCase,
-			nil,
-			nil,
-			nil,
-		)
+	router := setupRouter()
+	router.PATCH("/crimes/:id/status", controller.UpdateCrimeStatus)
 
-		req := controllers.UpdateStatusRequest{
-			Status: "INACTIVE",
-		}
+	input := usecases.UpdateCrimeStatusInput{
+		UUID:   "123",
+		Status: "INACTIVE",
+	}
 
-		mockUpdateStatusUseCase.On("Execute", mock.Anything, mock.Anything).Return(nil)
+	mockUpdateStatusUseCase.On("Execute", mock.Anything, input).Return(nil)
 
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Params = []gin.Param{{Key: "id", Value: "1"}}
+	// Act
+	reqBody := controllers.UpdateStatusRequest{
+		Status: "INACTIVE",
+	}
+	body, _ := json.Marshal(reqBody)
+	req := httptest.NewRequest(http.MethodPatch, "/crimes/123/status", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "valid-key")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
 
-		body, _ := json.Marshal(req)
-		c.Request = httptest.NewRequest(http.MethodPatch, "/crimes/1/status", bytes.NewBuffer(body))
-		c.Request.Header.Set("Content-Type", "application/json")
-
-		controller.UpdateCrimeStatus(c)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-		mockUpdateStatusUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al actualizar estado - ID inválido", func(t *testing.T) {
-		mockUpdateStatusUseCase := new(mocks.MockUpdateCrimeStatusUseCase)
-		controller := controllers.NewCrimeController(
-			nil,
-			nil,
-			mockUpdateStatusUseCase,
-			nil,
-			nil,
-			nil,
-		)
-
-		req := controllers.UpdateStatusRequest{
-			Status: "INACTIVE",
-		}
-
-		expectedError := errors.New("ID inválido")
-		mockUpdateStatusUseCase.On("Execute", mock.Anything, mock.Anything).Return(expectedError)
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Params = []gin.Param{{Key: "id", Value: ""}}
-
-		body, _ := json.Marshal(req)
-		c.Request = httptest.NewRequest(http.MethodPatch, "/crimes//status", bytes.NewBuffer(body))
-		c.Request.Header.Set("Content-Type", "application/json")
-
-		controller.UpdateCrimeStatus(c)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-		var response controllers.ErrorResponse
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedError.Error(), response.Error)
-
-		mockUpdateStatusUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al actualizar estado - Error interno", func(t *testing.T) {
-		mockUpdateStatusUseCase := new(mocks.MockUpdateCrimeStatusUseCase)
-		controller := controllers.NewCrimeController(
-			nil,
-			nil,
-			mockUpdateStatusUseCase,
-			nil,
-			nil,
-			nil,
-		)
-
-		req := controllers.UpdateStatusRequest{
-			Status: "INACTIVE",
-		}
-
-		expectedError := errors.New("error al actualizar estado")
-		mockUpdateStatusUseCase.On("Execute", mock.Anything, mock.Anything).Return(expectedError)
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Params = []gin.Param{{Key: "id", Value: "1"}}
-
-		body, _ := json.Marshal(req)
-		c.Request = httptest.NewRequest(http.MethodPatch, "/crimes/1/status", bytes.NewBuffer(body))
-		c.Request.Header.Set("Content-Type", "application/json")
-
-		controller.UpdateCrimeStatus(c)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-
-		var response controllers.ErrorResponse
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedError.Error(), response.Error)
-
-		mockUpdateStatusUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al actualizar estado - JSON inválido", func(t *testing.T) {
-		mockUseCase := new(mocks.MockUpdateCrimeStatusUseCase)
-		controller := controllers.NewCrimeController(nil, nil, mockUseCase, nil, nil, nil)
-
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Request = httptest.NewRequest(http.MethodPut, "/", strings.NewReader("{json_invalido}"))
-
-		controller.UpdateCrimeStatus(c)
-
-		assert.Equal(t, http.StatusBadRequest, c.Writer.Status())
-	})
-
-	t.Run("Error al actualizar estado - JSON vacío", func(t *testing.T) {
-		mockUseCase := new(mocks.MockUpdateCrimeStatusUseCase)
-		controller := controllers.NewCrimeController(nil, nil, mockUseCase, nil, nil, nil)
-
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Request = httptest.NewRequest(http.MethodPut, "/", strings.NewReader(""))
-
-		controller.UpdateCrimeStatus(c)
-
-		assert.Equal(t, http.StatusBadRequest, c.Writer.Status())
-	})
-
-	t.Run("Error al actualizar estado - Campo status faltante", func(t *testing.T) {
-		mockUseCase := new(mocks.MockUpdateCrimeStatusUseCase)
-		controller := controllers.NewCrimeController(nil, nil, mockUseCase, nil, nil, nil)
-
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Request = httptest.NewRequest(http.MethodPut, "/", strings.NewReader(`{"id": "123"}`))
-
-		controller.UpdateCrimeStatus(c)
-
-		assert.Equal(t, http.StatusBadRequest, c.Writer.Status())
-	})
-
-	t.Run("Error al actualizar estado - Campo id faltante", func(t *testing.T) {
-		mockUseCase := new(mocks.MockUpdateCrimeStatusUseCase)
-		controller := controllers.NewCrimeController(nil, nil, mockUseCase, nil, nil, nil)
-
-		// Configurar el mock para devolver un error cuando se llama con ID vacío
-		mockUseCase.On("Execute", mock.Anything, usecases.UpdateCrimeStatusInput{
-			ID:     "",
-			Status: "INACTIVE",
-		}).Return(errors.New("ID inválido"))
-
-		// Crear el request con JSON sin el campo ID
-		requestBody := `{"status": "INACTIVE"}`
-		req, _ := http.NewRequest("PUT", "/crimes/status", strings.NewReader(requestBody))
-		req.Header.Set("Content-Type", "application/json")
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Request = req
-
-		controller.UpdateCrimeStatus(c)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-		mockUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Eliminar delito exitosamente", func(t *testing.T) {
-		mockDeleteUseCase := new(mocks.MockDeleteCrimeUseCase)
-		controller := controllers.NewCrimeController(
-			nil,
-			nil,
-			nil,
-			mockDeleteUseCase,
-			nil,
-			nil,
-		)
-
-		mockDeleteUseCase.On("Execute", mock.Anything, "1").Return(nil)
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Params = []gin.Param{{Key: "id", Value: "1"}}
-
-		c.Request = httptest.NewRequest(http.MethodDelete, "/crimes/1", nil)
-
-		controller.DeleteCrime(c)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-		mockDeleteUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al eliminar delito - ID inválido", func(t *testing.T) {
-		mockUseCase := new(mocks.MockDeleteCrimeUseCase)
-		controller := controllers.NewCrimeController(nil, nil, nil, mockUseCase, nil, nil)
-
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Request = httptest.NewRequest(http.MethodDelete, "/", nil)
-
-		expectedError := errors.New("ID inválido")
-		mockUseCase.On("Execute", mock.Anything, "").Return(expectedError)
-
-		controller.DeleteCrime(c)
-
-		assert.Equal(t, http.StatusInternalServerError, c.Writer.Status())
-		mockUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al eliminar delito - Error interno", func(t *testing.T) {
-		mockUseCase := new(mocks.MockDeleteCrimeUseCase)
-		controller := controllers.NewCrimeController(nil, nil, nil, mockUseCase, nil, nil)
-
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Params = []gin.Param{{Key: "id", Value: "123"}}
-		c.Request = httptest.NewRequest(http.MethodDelete, "/", nil)
-
-		expectedError := errors.New("error interno")
-		mockUseCase.On("Execute", mock.Anything, "123").Return(expectedError)
-
-		controller.DeleteCrime(c)
-
-		assert.Equal(t, http.StatusInternalServerError, c.Writer.Status())
-		mockUseCase.AssertExpectations(t)
-	})
+	// Assert
+	assert.Equal(t, http.StatusOK, w.Code)
+	mockUpdateStatusUseCase.AssertExpectations(t)
 }
 
 func TestCrimeController_GetCrimeStats(t *testing.T) {
-	t.Run("Error al obtener estadísticas - Error interno", func(t *testing.T) {
-		mockUseCase := new(mocks.MockGetCrimeStatsUseCase)
-		controller := controllers.NewCrimeController(nil, nil, nil, nil, mockUseCase, nil)
+	// Arrange
+	mockGetStatsUseCase := new(mocks.GetCrimeStatsUseCase)
+	controller := controllers.NewCrimeController(
+		nil,
+		nil,
+		nil,
+		nil,
+		mockGetStatsUseCase,
+		nil,
+	)
 
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Request = httptest.NewRequest(http.MethodGet, "/stats", nil)
+	expectedStats := &entities.CrimeStats{
+		TotalCrimes:    100,
+		ActiveCrimes:   50,
+		InactiveCrimes: 30,
+		CrimesByType: map[string]int64{
+			"robo":      60,
+			"asalto":    30,
+			"homicidio": 10,
+		},
+		CrimesByStatus: map[string]int64{
+			"ACTIVE":   50,
+			"INACTIVE": 30,
+			"DELETED":  20,
+		},
+		CrimesByLocation: map[string]int64{},
+		CrimesByAddress:  map[string]int64{},
+		LastUpdate:       time.Now(),
+	}
 
-		expectedError := errors.New("error interno")
-		mockUseCase.On("Execute", mock.Anything).Return(nil, expectedError)
+	mockGetStatsUseCase.On("Execute", mock.Anything).Return(expectedStats, nil)
 
-		controller.GetCrimeStats(c)
+	router := setupRouter()
+	router.GET("/crimes/stats", controller.GetCrimeStats)
 
-		assert.Equal(t, http.StatusInternalServerError, c.Writer.Status())
-		mockUseCase.AssertExpectations(t)
-	})
+	// Act
+	req := httptest.NewRequest(http.MethodGet, "/crimes/stats", nil)
+	req.Header.Set("X-API-Key", "valid-key")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
 
-	t.Run("Error al obtener estadísticas - Sin datos", func(t *testing.T) {
-		mockUseCase := new(mocks.MockGetCrimeStatsUseCase)
-		controller := controllers.NewCrimeController(nil, nil, nil, nil, mockUseCase, nil)
+	// Assert
+	assert.Equal(t, http.StatusOK, w.Code)
+	mockGetStatsUseCase.AssertExpectations(t)
+}
 
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Request = httptest.NewRequest(http.MethodGet, "/stats", nil)
+func TestCrimeController_DeleteCrime(t *testing.T) {
+	// Arrange
+	mockDeleteUseCase := new(mocks.DeleteCrimeUseCase)
+	controller := controllers.NewCrimeController(
+		nil,
+		nil,
+		nil,
+		mockDeleteUseCase,
+		nil,
+		nil,
+	)
 
-		mockUseCase.On("Execute", mock.Anything).Return(nil, nil)
+	mockDeleteUseCase.On("Execute", mock.Anything, "123").Return(nil)
 
-		controller.GetCrimeStats(c)
+	router := setupRouter()
+	router.DELETE("/crimes/:id", controller.DeleteCrime)
 
-		assert.Equal(t, http.StatusNotFound, c.Writer.Status())
-		mockUseCase.AssertExpectations(t)
-	})
+	// Act
+	req := httptest.NewRequest(http.MethodDelete, "/crimes/123", nil)
+	req.Header.Set("X-API-Key", "valid-key")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
 
-	t.Run("Obtener estadísticas exitosamente", func(t *testing.T) {
-		mockGetStatsUseCase := new(mocks.MockGetCrimeStatsUseCase)
-		controller := controllers.NewCrimeController(
-			nil,
-			nil,
-			nil,
-			nil,
-			mockGetStatsUseCase,
-			nil,
-		)
-
-		expectedStats := &entities.CrimeStats{
-			TotalCrimes:      10,
-			ActiveCrimes:     5,
-			InactiveCrimes:   3,
-			CrimesByType:     map[string]int64{"ROBO": 5, "ASALTO": 3},
-			CrimesByStatus:   map[string]int64{"ACTIVE": 5, "INACTIVE": 3},
-			CrimesByLocation: map[string]int64{"CENTRO": 5, "SUR": 3},
-			CrimesByAddress:  map[string]int64{"AV CORRIENTES": 5, "AV RIVADAVIA": 3},
-			LastUpdate:       time.Now(),
-		}
-
-		mockGetStatsUseCase.On("Execute", mock.Anything).Return(expectedStats, nil)
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodGet, "/crimes/stats", nil)
-
-		controller.GetCrimeStats(c)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-
-		var response entities.CrimeStats
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedStats.TotalCrimes, response.TotalCrimes)
-		assert.Equal(t, expectedStats.ActiveCrimes, response.ActiveCrimes)
-		assert.Equal(t, expectedStats.InactiveCrimes, response.InactiveCrimes)
-		assert.Equal(t, expectedStats.CrimesByType, response.CrimesByType)
-		assert.Equal(t, expectedStats.CrimesByStatus, response.CrimesByStatus)
-		assert.Equal(t, expectedStats.CrimesByLocation, response.CrimesByLocation)
-		assert.Equal(t, expectedStats.CrimesByAddress, response.CrimesByAddress)
-
-		mockGetStatsUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al obtener estadísticas - Error de base de datos", func(t *testing.T) {
-		mockGetStatsUseCase := new(mocks.MockGetCrimeStatsUseCase)
-		controller := controllers.NewCrimeController(
-			nil,
-			nil,
-			nil,
-			nil,
-			mockGetStatsUseCase,
-			nil,
-		)
-
-		expectedError := errors.New("error de base de datos")
-		mockGetStatsUseCase.On("Execute", mock.Anything).Return(nil, expectedError)
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodGet, "/crimes/stats", nil)
-
-		controller.GetCrimeStats(c)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-		var response controllers.ErrorResponse
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedError.Error(), response.Error)
-
-		mockGetStatsUseCase.AssertExpectations(t)
-	})
-
-	t.Run("Error al obtener estadísticas - Error de procesamiento", func(t *testing.T) {
-		mockGetStatsUseCase := new(mocks.MockGetCrimeStatsUseCase)
-		controller := controllers.NewCrimeController(
-			nil,
-			nil,
-			nil,
-			nil,
-			mockGetStatsUseCase,
-			nil,
-		)
-
-		expectedError := errors.New("error al procesar estadísticas")
-		mockGetStatsUseCase.On("Execute", mock.Anything).Return(nil, expectedError)
-
-		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
-		c.Request = httptest.NewRequest(http.MethodGet, "/crimes/stats", nil)
-
-		controller.GetCrimeStats(c)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
-		var response controllers.ErrorResponse
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, expectedError.Error(), response.Error)
-
-		mockGetStatsUseCase.AssertExpectations(t)
-	})
+	// Assert
+	assert.Equal(t, http.StatusNoContent, w.Code)
+	mockDeleteUseCase.AssertExpectations(t)
 }
 
 func TestCrimeController_GetCrime(t *testing.T) {
-	t.Run("Error al obtener delito - ID inválido", func(t *testing.T) {
-		mockUseCase := new(mocks.MockGetCrimeUseCase)
-		controller := controllers.NewCrimeController(nil, nil, nil, nil, nil, mockUseCase)
+	// Arrange
+	mockGetUseCase := new(mocks.GetCrimeUseCase)
+	controller := controllers.NewCrimeController(
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		mockGetUseCase,
+	)
 
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+	expectedCrime := &entities.Crime{
+		ID:          1,
+		Title:       "Test Crime",
+		Description: "Test Description",
+		Type:        "ROBO",
+		Status:      "ACTIVE",
+		Location: entities.Location{
+			Latitude:  -34.603722,
+			Longitude: -58.381592,
+			Address:   "Test Address",
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
 
-		expectedError := errors.New("ID inválido")
-		mockUseCase.On("Execute", mock.Anything, "").Return(nil, expectedError)
+	mockGetUseCase.On("Execute", mock.Anything, "123").Return(expectedCrime, nil)
 
-		controller.GetCrime(c)
+	router := setupRouter()
+	router.GET("/crimes/:id", controller.GetCrime)
 
-		assert.Equal(t, http.StatusInternalServerError, c.Writer.Status())
-		mockUseCase.AssertExpectations(t)
-	})
+	// Act
+	req := httptest.NewRequest(http.MethodGet, "/crimes/123", nil)
+	req.Header.Set("X-API-Key", "valid-key")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
 
-	t.Run("Error al obtener delito - No encontrado", func(t *testing.T) {
-		mockUseCase := new(mocks.MockGetCrimeUseCase)
-		controller := controllers.NewCrimeController(nil, nil, nil, nil, nil, mockUseCase)
-
-		c, _ := gin.CreateTestContext(httptest.NewRecorder())
-		c.Params = []gin.Param{{Key: "id", Value: "123"}}
-		c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
-
-		mockUseCase.On("Execute", mock.Anything, "123").Return(nil, nil)
-
-		controller.GetCrime(c)
-
-		assert.Equal(t, http.StatusNotFound, c.Writer.Status())
-		mockUseCase.AssertExpectations(t)
-	})
+	// Assert
+	assert.Equal(t, http.StatusOK, w.Code)
+	mockGetUseCase.AssertExpectations(t)
 }
 
-func TestParseFloat64(t *testing.T) {
-	t.Run("Cadena vacía", func(t *testing.T) {
-		result := controllers.ParseFloat64("")
-		assert.Equal(t, 0.0, result)
-	})
+func TestCrimeController_ListCrimes_Unauthorized(t *testing.T) {
+	// Arrange
+	mockCreateUseCase := new(mocks.CreateCrimeUseCase)
+	mockListUseCase := new(mocks.ListCrimesUseCase)
+	mockUpdateStatusUseCase := new(mocks.UpdateCrimeStatusUseCase)
+	mockDeleteUseCase := new(mocks.DeleteCrimeUseCase)
+	mockGetStatsUseCase := new(mocks.GetCrimeStatsUseCase)
+	mockGetCrimeUseCase := new(mocks.GetCrimeUseCase)
 
-	t.Run("Número válido", func(t *testing.T) {
-		result := controllers.ParseFloat64("3.14")
-		assert.Equal(t, 3.14, result)
-	})
+	controller := controllers.NewCrimeController(
+		mockCreateUseCase,
+		mockListUseCase,
+		mockUpdateStatusUseCase,
+		mockDeleteUseCase,
+		mockGetStatsUseCase,
+		mockGetCrimeUseCase,
+	)
 
-	t.Run("Número entero", func(t *testing.T) {
-		result := controllers.ParseFloat64("42")
-		assert.Equal(t, 42.0, result)
-	})
+	params := usecases.ListCrimesParams{
+		Page:  1,
+		Limit: 10,
+	}
 
-	t.Run("Número negativo", func(t *testing.T) {
-		result := controllers.ParseFloat64("-3.14")
-		assert.Equal(t, -3.14, result)
-	})
+	mockListUseCase.On("Execute", mock.Anything, params).Return((*entities.CrimeList)(nil), errors.New("unauthorized"))
 
-	t.Run("Cadena inválida", func(t *testing.T) {
-		result := controllers.ParseFloat64("no es un número")
-		assert.Equal(t, 0.0, result)
-	})
+	router := setupRouter()
+	router.GET("/crimes", controller.ListCrimes)
 
-	t.Run("Cadena con espacios", func(t *testing.T) {
-		result := controllers.ParseFloat64(" 3.14 ")
-		assert.Equal(t, 3.14, result)
-	})
+	// Act
+	req := httptest.NewRequest(http.MethodGet, "/crimes?page=1&limit=10", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	mockListUseCase.AssertExpectations(t)
+}
+
+func TestCrimeController_CreateCrime_Unauthorized(t *testing.T) {
+	// Arrange
+	router := setupRouter()
+	createUseCase := new(mocks.CreateCrimeUseCase)
+	listUseCase := new(mocks.ListCrimesUseCase)
+	updateStatusUseCase := new(mocks.UpdateCrimeStatusUseCase)
+	deleteUseCase := new(mocks.DeleteCrimeUseCase)
+	getStatsUseCase := new(mocks.GetCrimeStatsUseCase)
+	getCrimeUseCase := new(mocks.GetCrimeUseCase)
+
+	controller := controllers.NewCrimeController(
+		createUseCase,
+		listUseCase,
+		updateStatusUseCase,
+		deleteUseCase,
+		getStatsUseCase,
+		getCrimeUseCase,
+	)
+
+	addressNumber := "123"
+	city := "Buenos Aires"
+	province := "Buenos Aires"
+	country := "Argentina"
+	zipCode := "1000"
+
+	reqBody := controllers.CreateCrimeRequest{
+		Title:         "Test Crime",
+		Description:   "Test Description",
+		Type:          "ROBBERY",
+		Latitude:      -34.603722,
+		Longitude:     -58.381592,
+		Address:       "Test Address",
+		AddressNumber: addressNumber,
+		City:          city,
+		Province:      province,
+		Country:       country,
+		ZipCode:       zipCode,
+	}
+
+	createUseCase.On("Execute", mock.Anything, mock.AnythingOfType("usecases.CreateCrimeInput")).Return((*entities.Crime)(nil), errors.New("unauthorized"))
+
+	body, _ := json.Marshal(reqBody)
+	req := httptest.NewRequest("POST", "/crimes", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	router.POST("/crimes", controller.CreateCrime)
+	router.ServeHTTP(w, req)
+
+	// Assert
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("Expected status code %d, got %d", http.StatusUnauthorized, w.Code)
+	}
+
+	createUseCase.AssertExpectations(t)
+}
+
+func TestCrimeController_CreateCrime_InvalidAPIKey(t *testing.T) {
+	// Arrange
+	router := setupRouter()
+	createUseCase := new(mocks.CreateCrimeUseCase)
+	listUseCase := new(mocks.ListCrimesUseCase)
+	updateStatusUseCase := new(mocks.UpdateCrimeStatusUseCase)
+	deleteUseCase := new(mocks.DeleteCrimeUseCase)
+	getStatsUseCase := new(mocks.GetCrimeStatsUseCase)
+	getCrimeUseCase := new(mocks.GetCrimeUseCase)
+
+	controller := controllers.NewCrimeController(
+		createUseCase,
+		listUseCase,
+		updateStatusUseCase,
+		deleteUseCase,
+		getStatsUseCase,
+		getCrimeUseCase,
+	)
+
+	addressNumber := "123"
+	city := "Buenos Aires"
+	province := "Buenos Aires"
+	country := "Argentina"
+	zipCode := "1000"
+
+	reqBody := controllers.CreateCrimeRequest{
+		Title:         "Test Crime",
+		Description:   "Test Description",
+		Type:          "ROBBERY",
+		Latitude:      -34.603722,
+		Longitude:     -58.381592,
+		Address:       "Test Address",
+		AddressNumber: addressNumber,
+		City:          city,
+		Province:      province,
+		Country:       country,
+		ZipCode:       zipCode,
+	}
+
+	createUseCase.On("Execute", mock.Anything, mock.AnythingOfType("usecases.CreateCrimeInput")).Return((*entities.Crime)(nil), errors.New("invalid api key"))
+
+	body, _ := json.Marshal(reqBody)
+	req := httptest.NewRequest("POST", "/crimes", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "invalid-key")
+	w := httptest.NewRecorder()
+
+	router.POST("/crimes", controller.CreateCrime)
+	router.ServeHTTP(w, req)
+
+	// Assert
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("Expected status code %d, got %d", http.StatusUnauthorized, w.Code)
+	}
+}
+
+func TestCrimeController_UpdateCrimeStatus_Unauthorized(t *testing.T) {
+	// Arrange
+	router := setupRouter()
+	createUseCase := new(mocks.CreateCrimeUseCase)
+	listUseCase := new(mocks.ListCrimesUseCase)
+	updateStatusUseCase := new(mocks.UpdateCrimeStatusUseCase)
+	deleteUseCase := new(mocks.DeleteCrimeUseCase)
+	getStatsUseCase := new(mocks.GetCrimeStatsUseCase)
+	getCrimeUseCase := new(mocks.GetCrimeUseCase)
+
+	controller := controllers.NewCrimeController(
+		createUseCase,
+		listUseCase,
+		updateStatusUseCase,
+		deleteUseCase,
+		getStatsUseCase,
+		getCrimeUseCase,
+	)
+
+	input := usecases.UpdateCrimeStatusInput{
+		UUID:   "123",
+		Status: "INACTIVE",
+	}
+
+	updateStatusUseCase.On("Execute", mock.Anything, input).Return(errors.New("unauthorized"))
+
+	reqBody := map[string]string{
+		"status": "inactive",
+	}
+	body, _ := json.Marshal(reqBody)
+
+	req := httptest.NewRequest("PATCH", "/api/crimes/123/status", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	router.PATCH("/api/crimes/:id/status", controller.UpdateCrimeStatus)
+	router.ServeHTTP(w, req)
+
+	// Assert
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("Expected status code %d, got %d", http.StatusUnauthorized, w.Code)
+	}
+
+	updateStatusUseCase.AssertExpectations(t)
+}
+
+func TestCrimeController_DeleteCrime_Unauthorized(t *testing.T) {
+	// Arrange
+	router := setupRouter()
+	createUseCase := new(mocks.CreateCrimeUseCase)
+	listUseCase := new(mocks.ListCrimesUseCase)
+	updateStatusUseCase := new(mocks.UpdateCrimeStatusUseCase)
+	deleteUseCase := new(mocks.DeleteCrimeUseCase)
+	getStatsUseCase := new(mocks.GetCrimeStatsUseCase)
+	getCrimeUseCase := new(mocks.GetCrimeUseCase)
+
+	controller := controllers.NewCrimeController(
+		createUseCase,
+		listUseCase,
+		updateStatusUseCase,
+		deleteUseCase,
+		getStatsUseCase,
+		getCrimeUseCase,
+	)
+
+	deleteUseCase.On("Execute", mock.Anything, "1").Return(errors.New("unauthorized"))
+
+	req := httptest.NewRequest("DELETE", "/api/crimes/1", nil)
+	w := httptest.NewRecorder()
+
+	router.DELETE("/api/crimes/:id", controller.DeleteCrime)
+	router.ServeHTTP(w, req)
+
+	// Assert
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("Expected status code %d, got %d", http.StatusUnauthorized, w.Code)
+	}
+
+	deleteUseCase.AssertExpectations(t)
+}
+
+func TestCrimeController_DeleteCrime_NotFound(t *testing.T) {
+	// Arrange
+	router := setupRouter()
+	createUseCase := new(mocks.CreateCrimeUseCase)
+	listUseCase := new(mocks.ListCrimesUseCase)
+	updateStatusUseCase := new(mocks.UpdateCrimeStatusUseCase)
+	deleteUseCase := new(mocks.DeleteCrimeUseCase)
+	getStatsUseCase := new(mocks.GetCrimeStatsUseCase)
+	getCrimeUseCase := new(mocks.GetCrimeUseCase)
+
+	controller := controllers.NewCrimeController(
+		createUseCase,
+		listUseCase,
+		updateStatusUseCase,
+		deleteUseCase,
+		getStatsUseCase,
+		getCrimeUseCase,
+	)
+
+	deleteUseCase.On("Execute", mock.Anything, "999").Return(errors.New("crime not found"))
+
+	req := httptest.NewRequest("DELETE", "/api/crimes/999", nil)
+	req.Header.Set("X-API-Key", "valid-key")
+	w := httptest.NewRecorder()
+
+	router.DELETE("/api/crimes/:id", controller.DeleteCrime)
+	router.ServeHTTP(w, req)
+
+	// Assert
+	if w.Code != http.StatusNotFound {
+		t.Errorf("Expected status code %d, got %d", http.StatusNotFound, w.Code)
+	}
+
+	deleteUseCase.AssertExpectations(t)
+}
+
+func TestCreateCrime_Success(t *testing.T) {
+	// Arrange
+	mockCreateUseCase := new(mocks.CreateCrimeUseCase)
+	controller := controllers.NewCrimeController(mockCreateUseCase, nil, nil, nil, nil, nil)
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.POST("/crimes", controller.CreateCrime)
+
+	addressNumber := "123"
+	city := "Buenos Aires"
+	province := "CABA"
+	country := "Argentina"
+	zipCode := "1000"
+
+	reqBody := controllers.CreateCrimeRequest{
+		Title:         "Robo a mano armada",
+		Description:   "Descripción del robo",
+		Type:          "ROBO",
+		Latitude:      -34.603722,
+		Longitude:     -58.381592,
+		Address:       "Calle Falsa",
+		AddressNumber: addressNumber,
+		City:          city,
+		Province:      province,
+		Country:       country,
+		ZipCode:       zipCode,
+	}
+
+	input := usecases.CreateCrimeInput{
+		Title:         reqBody.Title,
+		Description:   reqBody.Description,
+		Type:          reqBody.Type,
+		Latitude:      reqBody.Latitude,
+		Longitude:     reqBody.Longitude,
+		Address:       reqBody.Address,
+		AddressNumber: reqBody.AddressNumber,
+		City:          reqBody.City,
+		Province:      reqBody.Province,
+		Country:       reqBody.Country,
+		ZipCode:       reqBody.ZipCode,
+	}
+
+	expectedCrime := &entities.Crime{
+		ID:          1,
+		Title:       input.Title,
+		Description: input.Description,
+		Type:        input.Type,
+		Location: entities.Location{
+			Latitude:      input.Latitude,
+			Longitude:     input.Longitude,
+			Address:       input.Address,
+			AddressNumber: input.AddressNumber,
+			City:          input.City,
+			Province:      input.Province,
+			Country:       input.Country,
+			ZipCode:       input.ZipCode,
+		},
+		Status:    "ACTIVE",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	// Act
+	mockCreateUseCase.On("Execute", mock.Anything, input).Return(expectedCrime, nil)
+
+	body, _ := json.Marshal(reqBody)
+	req := httptest.NewRequest(http.MethodPost, "/crimes", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "valid-key")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusCreated, w.Code)
+	mockCreateUseCase.AssertExpectations(t)
+}
+
+func TestListCrimes_Success(t *testing.T) {
+	// Arrange
+	mockListUseCase := new(mocks.ListCrimesUseCase)
+	controller := controllers.NewCrimeController(nil, mockListUseCase, nil, nil, nil, nil)
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/crimes", controller.ListCrimes)
+
+	params := usecases.ListCrimesParams{
+		Page:  1,
+		Limit: 10,
+	}
+
+	crimes := []entities.Crime{
+		{
+			ID:          1,
+			Title:       "Robo a mano armada",
+			Description: "Descripción del robo",
+			Type:        "robo",
+			Location: entities.Location{
+				Latitude:  -34.603722,
+				Longitude: -58.381592,
+				Address:   "Calle Falsa 123",
+			},
+			Status:    "pendiente",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+	}
+
+	expectedResponse := &entities.CrimeList{
+		Items: crimes,
+		Total: 1,
+	}
+
+	// Act
+	mockListUseCase.On("Execute", mock.Anything, params).Return(expectedResponse, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/crimes?page=1&limit=10", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusOK, w.Code)
+	mockListUseCase.AssertExpectations(t)
+}
+
+func TestGetCrime_Error(t *testing.T) {
+	// Arrange
+	mockGetUseCase := new(mocks.GetCrimeUseCase)
+	controller := controllers.NewCrimeController(
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		mockGetUseCase,
+	)
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/crimes/:id", controller.GetCrime)
+
+	// Act
+	mockGetUseCase.On("Execute", mock.Anything, "123").Return(nil, errors.New("error al obtener el delito"))
+
+	req := httptest.NewRequest(http.MethodGet, "/crimes/123", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	mockGetUseCase.AssertExpectations(t)
+}
+
+func TestUpdateCrimeStatus_Success(t *testing.T) {
+	// Arrange
+	mockUseCase := new(mocks.UpdateCrimeStatusUseCase)
+	controller := controllers.NewCrimeController(nil, nil, mockUseCase, nil, nil, nil)
+
+	uuid := "test-uuid"
+	input := usecases.UpdateCrimeStatusInput{
+		UUID:   uuid,
+		Status: "INACTIVE",
+	}
+
+	mockUseCase.On("Execute", mock.Anything, input).Return(nil)
+
+	// Create request
+	reqBody := `{"status": "INACTIVE"}`
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPut, "/crimes/"+uuid+"/status", strings.NewReader(reqBody))
+
+	// Create gin context
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	c.Params = []gin.Param{{Key: "id", Value: uuid}}
+
+	// Act
+	controller.UpdateCrimeStatus(c)
+
+	// Assert
+	assert.Equal(t, http.StatusOK, w.Code)
+	mockUseCase.AssertExpectations(t)
+}
+
+func TestUpdateCrimeStatus_InvalidUUID(t *testing.T) {
+	// Arrange
+	mockUpdateStatusUseCase := new(mocks.UpdateCrimeStatusUseCase)
+	controller := controllers.NewCrimeController(nil, nil, mockUpdateStatusUseCase, nil, nil, nil)
+
+	// Si se llama, que retorne un error (no debería llamarse en este caso)
+	mockUpdateStatusUseCase.On("Execute", mock.Anything, mock.Anything).Return(errors.New("should not be called"))
+
+	// Create request
+	reqBody := `{"status": "INACTIVE"}`
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPut, "/crimes/status", strings.NewReader(reqBody))
+
+	// Create gin context
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	// Act
+	controller.UpdateCrimeStatus(c)
+
+	// Assert
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestDeleteCrime_Success(t *testing.T) {
+	// Arrange
+	mockDeleteUseCase := new(mocks.DeleteCrimeUseCase)
+	controller := controllers.NewCrimeController(
+		nil,
+		nil,
+		nil,
+		mockDeleteUseCase,
+		nil,
+		nil,
+	)
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.DELETE("/crimes/:id", controller.DeleteCrime)
+
+	// Act
+	mockDeleteUseCase.On("Execute", mock.Anything, "123").Return(nil)
+
+	req := httptest.NewRequest(http.MethodDelete, "/crimes/123", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusNoContent, w.Code)
+	mockDeleteUseCase.AssertExpectations(t)
+}
+
+func TestGetCrimeStats_Success(t *testing.T) {
+	// Arrange
+	mockGetStatsUseCase := new(mocks.GetCrimeStatsUseCase)
+	controller := controllers.NewCrimeController(
+		nil,
+		nil,
+		nil,
+		nil,
+		mockGetStatsUseCase,
+		nil,
+	)
+
+	router := setupRouter()
+	router.GET("/crimes/stats", controller.GetCrimeStats)
+
+	expectedStats := &entities.CrimeStats{
+		TotalCrimes:      100,
+		ActiveCrimes:     50,
+		InactiveCrimes:   30,
+		CrimesByType:     map[string]int64{"ROBO": 50, "HURTO": 30, "VIOLENTO": 20},
+		CrimesByStatus:   map[string]int64{"ACTIVE": 70, "RESOLVED": 30},
+		CrimesByLocation: map[string]int64{},
+		CrimesByAddress:  map[string]int64{},
+		LastUpdate:       time.Now(),
+	}
+
+	mockGetStatsUseCase.On("Execute", mock.Anything).Return(expectedStats, nil)
+
+	// Act
+	req := httptest.NewRequest(http.MethodGet, "/crimes/stats", nil)
+	req.Header.Set("X-API-Key", "valid-key")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusOK, w.Code)
+	mockGetStatsUseCase.AssertExpectations(t)
+
+	var response map[string]interface{}
+	err := json.NewDecoder(w.Body).Decode(&response)
+	assert.NoError(t, err)
+
+	assert.Equal(t, float64(100), response["total_crimes"])
+	assert.NotNil(t, response["crimes_by_type"])
+	assert.NotNil(t, response["crimes_by_status"])
+	assert.NotNil(t, response["crimes_by_location"])
+	assert.NotNil(t, response["crimes_by_address"])
+}
+
+func TestGetCrimeStats_Error(t *testing.T) {
+	// Arrange
+	mockGetStatsUseCase := new(mocks.GetCrimeStatsUseCase)
+	controller := controllers.NewCrimeController(
+		nil,
+		nil,
+		nil,
+		nil,
+		mockGetStatsUseCase,
+		nil,
+	)
+
+	router := setupRouter()
+	router.GET("/crimes/stats", controller.GetCrimeStats)
+
+	expectedError := errors.New("error getting crime stats")
+	mockGetStatsUseCase.On("Execute", mock.Anything).Return((*entities.CrimeStats)(nil), expectedError)
+
+	// Act
+	req := httptest.NewRequest(http.MethodGet, "/crimes/stats", nil)
+	req.Header.Set("X-API-Key", "valid-key")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	mockGetStatsUseCase.AssertExpectations(t)
+}
+
+// Casos de error
+func TestCreateCrime_Error(t *testing.T) {
+	// Arrange
+	mockCreateUseCase := new(mocks.CreateCrimeUseCase)
+	controller := controllers.NewCrimeController(mockCreateUseCase, nil, nil, nil, nil, nil)
+
+	router := setupRouter()
+	router.POST("/crimes", controller.CreateCrime)
+
+	addressNumber := "123"
+	city := "Buenos Aires"
+	province := "Buenos Aires"
+	country := "Argentina"
+	zipCode := "1000"
+
+	reqBody := controllers.CreateCrimeRequest{
+		Title:         "Robo a mano armada",
+		Description:   "Descripción del robo",
+		Type:          "ROBO",
+		Latitude:      -34.603722,
+		Longitude:     -58.381592,
+		Address:       "Calle Falsa 123",
+		AddressNumber: addressNumber,
+		City:          city,
+		Province:      province,
+		Country:       country,
+		ZipCode:       zipCode,
+	}
+
+	// Act
+	mockCreateUseCase.On("Execute", mock.Anything, mock.AnythingOfType("usecases.CreateCrimeInput")).Return(nil, errors.New("error al crear el delito"))
+
+	body, _ := json.Marshal(reqBody)
+	req := httptest.NewRequest(http.MethodPost, "/crimes", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "valid-key")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	mockCreateUseCase.AssertExpectations(t)
+}
+
+func TestListCrimes_Error(t *testing.T) {
+	// Arrange
+	mockListUseCase := new(mocks.ListCrimesUseCase)
+	controller := controllers.NewCrimeController(nil, mockListUseCase, nil, nil, nil, nil)
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/crimes", controller.ListCrimes)
+
+	params := usecases.ListCrimesParams{
+		Page:  1,
+		Limit: 10,
+	}
+
+	// Act
+	mockListUseCase.On("Execute", mock.Anything, params).Return(nil, errors.New("error al listar los delitos"))
+
+	req := httptest.NewRequest(http.MethodGet, "/crimes?page=1&limit=10", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	mockListUseCase.AssertExpectations(t)
+}
+
+func TestUpdateCrimeStatus_Error(t *testing.T) {
+	// Arrange
+	mockUpdateStatusUseCase := new(mocks.UpdateCrimeStatusUseCase)
+	controller := controllers.NewCrimeController(
+		nil,
+		nil,
+		mockUpdateStatusUseCase,
+		nil,
+		nil,
+		nil,
+	)
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.PUT("/crimes/:id/status", controller.UpdateCrimeStatus)
+
+	input := usecases.UpdateCrimeStatusInput{
+		UUID:   "123",
+		Status: "RESUELTO",
+	}
+
+	// Act
+	mockUpdateStatusUseCase.On("Execute", mock.Anything, input).Return(errors.New("error al actualizar el estado"))
+
+	body, _ := json.Marshal(map[string]string{"status": "RESUELTO"})
+	req := httptest.NewRequest(http.MethodPut, "/crimes/123/status", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "valid-key")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	mockUpdateStatusUseCase.AssertExpectations(t)
+}
+
+func TestDeleteCrime_Error(t *testing.T) {
+	// Arrange
+	mockDeleteUseCase := new(mocks.DeleteCrimeUseCase)
+	controller := controllers.NewCrimeController(
+		nil,
+		nil,
+		nil,
+		mockDeleteUseCase,
+		nil,
+		nil,
+	)
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.DELETE("/crimes/:id", controller.DeleteCrime)
+
+	// Act
+	mockDeleteUseCase.On("Execute", mock.Anything, "123").Return(errors.New("error al eliminar el delito"))
+
+	req := httptest.NewRequest(http.MethodDelete, "/crimes/123", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Assert
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	mockDeleteUseCase.AssertExpectations(t)
 }

@@ -1,0 +1,26 @@
+with-expecter: true
+packages:
+  go-crime_map_backend/internal/domain/repositories:
+    config:
+      all: true
+      outpkg: mocks
+      output: internal/domain/repositories/mocks
+      filename: "{{.InterfaceName}}.go"
+  go-crime_map_backend/internal/domain/usecases:
+    config:
+      all: true
+      outpkg: mocks
+      output: internal/domain/usecases/mocks
+      filename: "{{.InterfaceName}}.go"
+  go-crime_map_backend/internal/usecases:
+    config:
+      all: true
+      outpkg: mocks
+      output: internal/usecases/mocks
+      filename: "{{.InterfaceName}}.go"
+  go-crime_map_backend/internal/interface/controllers:
+    config:
+      all: true
+      outpkg: mocks
+      output: internal/interface/controllers/tests/mocks
+      filename: "{{.InterfaceName}}.go" 

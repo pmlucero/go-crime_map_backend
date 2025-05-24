@@ -11,7 +11,7 @@ import (
 
 // UpdateCrimeStatusInput representa los datos necesarios para actualizar el estado
 type UpdateCrimeStatusInput struct {
-	ID     string
+	UUID   string
 	Status string
 }
 
@@ -30,15 +30,15 @@ func NewUpdateCrimeStatusUseCase(repo repositories.CrimeRepository) *UpdateCrime
 // Execute ejecuta el caso de uso
 func (uc *UpdateCrimeStatusUseCase) Execute(ctx context.Context, input usecases.UpdateCrimeStatusInput) error {
 	// Validar datos de entrada
-	if input.ID == "" {
-		return fmt.Errorf("el ID es requerido")
+	if input.UUID == "" {
+		return fmt.Errorf("el UUID es requerido")
 	}
 	if input.Status == "" {
 		return fmt.Errorf("el estado es requerido")
 	}
 
 	// Obtener el delito del repositorio
-	crime, err := uc.crimeRepository.GetByID(ctx, input.ID)
+	crime, err := uc.crimeRepository.GetByUUID(ctx, input.UUID)
 	if err != nil {
 		if err == repositories.ErrNotFound {
 			return err

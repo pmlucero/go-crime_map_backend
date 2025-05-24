@@ -8,7 +8,6 @@ import (
 	"go-crime_map_backend/internal/infrastructure/database"
 	infraRepo "go-crime_map_backend/internal/infrastructure/repositories"
 	"go-crime_map_backend/internal/usecases"
-	"go-crime_map_backend/internal/utils"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -31,11 +30,11 @@ func TestGetCrimeUseCase_Integration(t *testing.T) {
 		Latitude:      -34.603722,
 		Longitude:     -58.381592,
 		Address:       "Av. Corrientes",
-		AddressNumber: utils.StringPtr("1234"),
-		City:          utils.StringPtr("Buenos Aires"),
-		Province:      utils.StringPtr("Buenos Aires"),
-		Country:       utils.StringPtr("Argentina"),
-		ZipCode:       utils.StringPtr("1042"),
+		AddressNumber: "1000",
+		City:          "Buenos Aires",
+		Province:      "Buenos Aires",
+		Country:       "Argentina",
+		ZipCode:       "1042",
 	}
 	createdCrime, err := createCrimeUseCase.Execute(context.Background(), input)
 	assert.NoError(t, err)
@@ -48,28 +47,30 @@ func TestGetCrimeUseCase_Integration(t *testing.T) {
 	}{
 		{
 			name:    "obtener delito existente",
-			crimeID: createdCrime.ID,
+			crimeID: createdCrime.UUID,
 		},
 		{
 			name:          "error - delito no encontrado",
 			crimeID:       "123e4567-e89b-12d3-a456-426614174000",
-			expectedError: "error al obtener el delito: error al obtener el delito: sql: no rows in result set",
+			expectedError: "error al obtener el delito: delito no encontrado con UUID 123e4567-e89b-12d3-a456-426614174000",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			// (No hay preparación adicional, pero se deja el comentario para el linter)
+			// Act
 			crime, err := useCase.Execute(context.Background(), tt.crimeID)
-
+			// Assert
 			if tt.expectedError != "" {
 				assert.Error(t, err)
 				assert.Equal(t, tt.expectedError, err.Error())
 				return
 			}
-
 			assert.NoError(t, err)
 			assert.NotNil(t, crime)
-			assert.Equal(t, createdCrime.ID, crime.ID)
+			assert.Equal(t, createdCrime.UUID, crime.UUID)
 			assert.Equal(t, input.Title, crime.Title)
 			assert.Equal(t, input.Type, crime.Type)
 			assert.Equal(t, input.Description, crime.Description)

@@ -34,14 +34,17 @@ type CrimeRepository interface {
 	// List obtiene una lista paginada de delitos
 	List(ctx context.Context, page, limit int, startDate, endDate *time.Time, crimeType, status *string) ([]entities.Crime, int64, error)
 
-	// GetByID obtiene un delito por su ID
-	GetByID(ctx context.Context, id string) (*entities.Crime, error)
+	// GetByID obtiene un delito por su ID numérico
+	GetByID(ctx context.Context, id int64) (*entities.Crime, error)
+
+	// GetByUUID obtiene un delito por su UUID
+	GetByUUID(ctx context.Context, uuid string) (*entities.Crime, error)
 
 	// Update actualiza un delito existente
 	Update(ctx context.Context, crime *entities.Crime) error
 
-	// Delete realiza una eliminación lógica de un delito
-	Delete(ctx context.Context, id string) error
+	// Delete elimina un delito por su ID
+	Delete(ctx context.Context, id int64) error
 
 	// GetStats obtiene estadísticas de delitos
 	GetStats(ctx context.Context) (*entities.CrimeStats, error)

@@ -8,7 +8,6 @@ import (
 	"go-crime_map_backend/internal/infrastructure/database"
 	infraRepo "go-crime_map_backend/internal/infrastructure/repositories"
 	"go-crime_map_backend/internal/usecases"
-	"go-crime_map_backend/internal/utils"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -36,11 +35,11 @@ func TestCreateCrimeUseCase_Integration(t *testing.T) {
 				Latitude:      -34.603722,
 				Longitude:     -58.381592,
 				Address:       "Av. Corrientes",
-				AddressNumber: utils.StringPtr("1234"),
-				City:          utils.StringPtr("Buenos Aires"),
-				Province:      utils.StringPtr("Buenos Aires"),
-				Country:       utils.StringPtr("Argentina"),
-				ZipCode:       utils.StringPtr("1000"),
+				AddressNumber: "1234",
+				City:          "Buenos Aires",
+				Province:      "Buenos Aires",
+				Country:       "Argentina",
+				ZipCode:       "1000",
 			},
 		},
 		{
@@ -51,11 +50,11 @@ func TestCreateCrimeUseCase_Integration(t *testing.T) {
 				Latitude:      -34.603722,
 				Longitude:     -58.381592,
 				Address:       "Av. Corrientes",
-				AddressNumber: utils.StringPtr("1234"),
-				City:          utils.StringPtr("Buenos Aires"),
-				Province:      utils.StringPtr("Buenos Aires"),
-				Country:       utils.StringPtr("Argentina"),
-				ZipCode:       utils.StringPtr("1000"),
+				AddressNumber: "1234",
+				City:          "Buenos Aires",
+				Province:      "Buenos Aires",
+				Country:       "Argentina",
+				ZipCode:       "1000",
 			},
 			expectedError: "el título es requerido",
 		},
@@ -67,11 +66,11 @@ func TestCreateCrimeUseCase_Integration(t *testing.T) {
 				Latitude:      -34.603722,
 				Longitude:     -58.381592,
 				Address:       "Av. Corrientes",
-				AddressNumber: utils.StringPtr("1234"),
-				City:          utils.StringPtr("Buenos Aires"),
-				Province:      utils.StringPtr("Buenos Aires"),
-				Country:       utils.StringPtr("Argentina"),
-				ZipCode:       utils.StringPtr("1000"),
+				AddressNumber: "1234",
+				City:          "Buenos Aires",
+				Province:      "Buenos Aires",
+				Country:       "Argentina",
+				ZipCode:       "1000",
 			},
 			expectedError: "la descripción es requerida",
 		},
@@ -83,11 +82,11 @@ func TestCreateCrimeUseCase_Integration(t *testing.T) {
 				Latitude:      -34.603722,
 				Longitude:     -58.381592,
 				Address:       "Av. Corrientes",
-				AddressNumber: utils.StringPtr("1234"),
-				City:          utils.StringPtr("Buenos Aires"),
-				Province:      utils.StringPtr("Buenos Aires"),
-				Country:       utils.StringPtr("Argentina"),
-				ZipCode:       utils.StringPtr("1000"),
+				AddressNumber: "1234",
+				City:          "Buenos Aires",
+				Province:      "Buenos Aires",
+				Country:       "Argentina",
+				ZipCode:       "1000",
 			},
 			expectedError: "el tipo es requerido",
 		},
@@ -99,12 +98,11 @@ func TestCreateCrimeUseCase_Integration(t *testing.T) {
 				Type:          "ROBO",
 				Latitude:      91,
 				Longitude:     -58.381592,
-				Address:       "Av. Corrientes",
-				AddressNumber: utils.StringPtr("1234"),
-				City:          utils.StringPtr("Buenos Aires"),
-				Province:      utils.StringPtr("Buenos Aires"),
-				Country:       utils.StringPtr("Argentina"),
-				ZipCode:       utils.StringPtr("1000"),
+				AddressNumber: "1234",
+				City:          "Buenos Aires",
+				Province:      "Buenos Aires",
+				Country:       "Argentina",
+				ZipCode:       "1000",
 			},
 			expectedError: "la latitud debe estar entre -90 y 90",
 		},
@@ -117,11 +115,11 @@ func TestCreateCrimeUseCase_Integration(t *testing.T) {
 				Latitude:      -34.603722,
 				Longitude:     181,
 				Address:       "Av. Corrientes",
-				AddressNumber: utils.StringPtr("1234"),
-				City:          utils.StringPtr("Buenos Aires"),
-				Province:      utils.StringPtr("Buenos Aires"),
-				Country:       utils.StringPtr("Argentina"),
-				ZipCode:       utils.StringPtr("1000"),
+				AddressNumber: "1234",
+				City:          "Buenos Aires",
+				Province:      "Buenos Aires",
+				Country:       "Argentina",
+				ZipCode:       "1000",
 			},
 			expectedError: "la longitud debe estar entre -180 y 180",
 		},
@@ -140,15 +138,17 @@ func TestCreateCrimeUseCase_Integration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			// (No hay preparación adicional, pero se deja el comentario para el linter)
+			// Act
 			crime, err := useCase.Execute(context.Background(), tt.input)
-
+			// Assert
 			if tt.expectedError != "" {
 				assert.Error(t, err)
 				assert.Equal(t, tt.expectedError, err.Error())
 				assert.Nil(t, crime)
 				return
 			}
-
 			assert.NoError(t, err)
 			assert.NotNil(t, crime)
 			assert.Equal(t, tt.input.Title, crime.Title)
