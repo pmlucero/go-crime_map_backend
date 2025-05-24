@@ -24,6 +24,11 @@ func AuthMiddleware(securityRepo repositories.SecurityRepository) gin.HandlerFun
 
 		key, err := securityRepo.ValidateAPIKey(c.Request.Context(), apiKey)
 		if err != nil {
+			if err.Error() == "sql: no rows in result set" {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "API Key inválida"})
+				c.Abort()
+				return
+			}
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			c.Abort()
 			return
@@ -35,10 +40,12 @@ func AuthMiddleware(securityRepo repositories.SecurityRepository) gin.HandlerFun
 			return
 		}
 
-		if !key.IsActive() {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "API Key inactiva"})
-			c.Abort()
-			return
+		if key != nil {
+			if !key.IsActiveBool {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "API Key inactiva"})
+				c.Abort()
+				return
+			}
 		}
 
 		if time.Now().After(key.ExpiresAt) {
@@ -47,7 +54,6 @@ func AuthMiddleware(securityRepo repositories.SecurityRepository) gin.HandlerFun
 			return
 		}
 
-		// Agregar el user_id al contexto para uso posterior
 		c.Set("user_id", key.ID)
 		c.Next()
 	}

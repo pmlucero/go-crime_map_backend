@@ -21,7 +21,7 @@ func APIKeyMiddleware(repo repositories.SecurityRepository) func(http.Handler) h
 				return
 			}
 
-			if key.Status != "active" {
+			if !key.IsActiveBool {
 				http.Error(w, "API key is not active", http.StatusUnauthorized)
 				return
 			}

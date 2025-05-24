@@ -3,7 +3,6 @@ package security
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	"go-crime_map_backend/internal/domain/entities"
 )
@@ -21,26 +20,22 @@ func NewRepository(db *sql.DB) *Repository {
 // ValidateAPIKey valida una API Key y retorna sus detalles si es válida
 func (r *Repository) ValidateAPIKey(ctx context.Context, key string) (*entities.APIKey, error) {
 	query := `
-		SELECT id, key, status, expires_at, created_at, updated_at
+		SELECT key, user_id, is_active, created_at, expires_at
 		FROM api_keys
-		WHERE key = ? AND status = 'active' AND expires_at > datetime('now')
+		WHERE key = ? AND is_active = 1
 	`
 
 	apiKey := &entities.APIKey{}
 	err := r.db.QueryRowContext(ctx, query, key).Scan(
-		&apiKey.ID,
 		&apiKey.Key,
-		&apiKey.Status,
-		&apiKey.ExpiresAt,
+		&apiKey.ID,
+		&apiKey.IsActiveBool,
 		&apiKey.CreatedAt,
-		&apiKey.UpdatedAt,
+		&apiKey.ExpiresAt,
 	)
 
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-
 	if err != nil {
+		// Si la tabla no existe, no hay coincidencia o hay otro error, denegar acceso
 		return nil, err
 	}
 
@@ -50,17 +45,16 @@ func (r *Repository) ValidateAPIKey(ctx context.Context, key string) (*entities.
 // CreateAPIKey almacena una nueva API Key en la base de datos
 func (r *Repository) CreateAPIKey(ctx context.Context, apiKey *entities.APIKey) error {
 	query := `
-		INSERT INTO api_keys (id, key, status, expires_at, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO api_keys (key, user_id, is_active, expires_at, created_at)
+		VALUES (?, ?, ?, ?, ?)
 	`
 
 	_, err := r.db.ExecContext(ctx, query,
-		apiKey.ID,
 		apiKey.Key,
-		apiKey.Status,
+		apiKey.ID,
+		apiKey.IsActiveBool,
 		apiKey.ExpiresAt,
 		apiKey.CreatedAt,
-		apiKey.UpdatedAt,
 	)
 
 	return err
@@ -69,19 +63,18 @@ func (r *Repository) CreateAPIKey(ctx context.Context, apiKey *entities.APIKey) 
 // GetAPIKey obtiene una API Key por su valor
 func (r *Repository) GetAPIKey(ctx context.Context, key string) (*entities.APIKey, error) {
 	query := `
-		SELECT id, key, status, expires_at, created_at, updated_at
+		SELECT key, user_id, is_active, expires_at, created_at
 		FROM api_keys
 		WHERE key = ?
 	`
 
 	apiKey := &entities.APIKey{}
 	err := r.db.QueryRowContext(ctx, query, key).Scan(
-		&apiKey.ID,
 		&apiKey.Key,
-		&apiKey.Status,
+		&apiKey.ID,
+		&apiKey.IsActiveBool,
 		&apiKey.ExpiresAt,
 		&apiKey.CreatedAt,
-		&apiKey.UpdatedAt,
 	)
 
 	if err == sql.ErrNoRows {
@@ -94,7 +87,7 @@ func (r *Repository) GetAPIKey(ctx context.Context, key string) (*entities.APIKe
 // ListAPIKeys obtiene todas las API Keys
 func (r *Repository) ListAPIKeys(ctx context.Context) ([]*entities.APIKey, error) {
 	query := `
-		SELECT id, key, status, expires_at, created_at, updated_at
+		SELECT key, user_id, is_active, expires_at, created_at
 		FROM api_keys
 	`
 
@@ -110,12 +103,11 @@ func (r *Repository) ListAPIKeys(ctx context.Context) ([]*entities.APIKey, error
 	for rows.Next() {
 		apiKey := &entities.APIKey{}
 		err := rows.Scan(
-			&apiKey.ID,
 			&apiKey.Key,
-			&apiKey.Status,
+			&apiKey.ID,
+			&apiKey.IsActiveBool,
 			&apiKey.ExpiresAt,
 			&apiKey.CreatedAt,
-			&apiKey.UpdatedAt,
 		)
 		if err != nil {
 			return nil, err
@@ -130,10 +122,10 @@ func (r *Repository) ListAPIKeys(ctx context.Context) ([]*entities.APIKey, error
 func (r *Repository) RevokeAPIKey(ctx context.Context, key string) error {
 	query := `
 		UPDATE api_keys
-		SET status = 'inactive', updated_at = ?
+		SET is_active = false
 		WHERE key = ?
 	`
 
-	_, err := r.db.ExecContext(ctx, query, time.Now(), key)
+	_, err := r.db.ExecContext(ctx, query, key)
 	return err
 }

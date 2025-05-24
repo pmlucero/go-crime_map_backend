@@ -232,7 +232,7 @@ func (c *CrimeController) UpdateCrimeStatus(ctx *gin.Context) {
 			ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 			return
 		}
-		if err.Error() == "crime not found" {
+		if err.Error() == "crime not found" || err.Error() == "el delito ya fue eliminado" {
 			ctx.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
 			return
 		}
@@ -329,7 +329,7 @@ func (c *CrimeController) GetCrime(ctx *gin.Context) {
 		return
 	}
 
-	if crime == nil {
+	if crime == nil || crime.Status == string(entities.CrimeStatusDeleted) {
 		ctx.JSON(http.StatusNotFound, ErrorResponse{Error: "No se encontró el delito"})
 		return
 	}

@@ -8,6 +8,7 @@ DROP TABLE crimes;
 CREATE TABLE crimes (
     id BIGSERIAL PRIMARY KEY,
     uuid VARCHAR(36) NOT NULL UNIQUE,
+    title VARCHAR(255) NOT NULL,
     crime_type VARCHAR(50) NOT NULL,
     description TEXT,
     latitude DOUBLE PRECISION NOT NULL,
@@ -32,19 +33,26 @@ CREATE INDEX idx_crimes_location ON crimes USING gist (
     ll_to_earth(latitude, longitude)
 );
 
--- Restauramos los datos con la nueva estructura
+-- Restauramos los datos con la nueva estructura (asignando uuid nuevos)
 INSERT INTO crimes (
     id, uuid, crime_type, description, latitude, longitude,
-    status, created_at, updated_at, deleted_at
+    status, address, address_number, city, province, country, zip_code,
+    created_at, updated_at, deleted_at
 )
 SELECT 
     id,
-    COALESCE(uuid, gen_random_uuid()::text),
+    gen_random_uuid()::text,
     COALESCE(crime_type, 'UNKNOWN'),
     description,
     COALESCE(latitude, 0),
     COALESCE(longitude, 0),
     COALESCE(status, 'ACTIVE'),
+    address,
+    address_number,
+    city,
+    province,
+    country,
+    zip_code,
     created_at,
     updated_at,
     deleted_at

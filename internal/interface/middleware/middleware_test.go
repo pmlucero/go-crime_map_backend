@@ -55,9 +55,9 @@ func TestAPIKeyMiddleware_MissingAPIKey_ReturnsUnauthorized(t *testing.T) {
 func TestAPIKeyMiddleware_ValidAPIKey_ReturnsOK(t *testing.T) {
 	// Arrange
 	validKey := &entities.APIKey{
-		Key:       "valid-key",
-		Status:    "active",
-		ExpiresAt: time.Now().Add(24 * time.Hour),
+		Key:          "valid-key",
+		IsActiveBool: true,
+		ExpiresAt:    time.Now().Add(24 * time.Hour),
 	}
 
 	mockRepo := &mockSecurityRepo{
@@ -96,9 +96,9 @@ func TestAPIKeyMiddleware_ValidAPIKey_ReturnsOK(t *testing.T) {
 func TestAPIKeyMiddleware_InactiveAPIKey_ReturnsUnauthorized(t *testing.T) {
 	// Arrange
 	inactiveKey := &entities.APIKey{
-		Key:       "inactive-key",
-		Status:    "inactive",
-		ExpiresAt: time.Now().Add(24 * time.Hour),
+		Key:          "inactive-key",
+		IsActiveBool: false,
+		ExpiresAt:    time.Now().Add(24 * time.Hour),
 	}
 
 	mockRepo := &mockSecurityRepo{

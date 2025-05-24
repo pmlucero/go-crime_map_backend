@@ -8,7 +8,9 @@ import (
 
 	"go-crime_map_backend/internal/infrastructure/repositories"
 	"go-crime_map_backend/internal/interface/controllers"
+	"go-crime_map_backend/internal/interface/middleware"
 	"go-crime_map_backend/internal/interface/routes"
+	"go-crime_map_backend/internal/security"
 	"go-crime_map_backend/internal/usecases"
 
 	_ "go-crime_map_backend/docs"
@@ -73,6 +75,7 @@ func (s *Server) Shutdown() error {
 func (s *Server) SetupRoutes(db *sqlx.DB) error {
 	// Crear repositorio
 	crimeRepo := repositories.NewPostgresCrimeRepository(db)
+	securityRepo := security.NewRepository(db.DB)
 
 	// Crear casos de uso
 	createCrimeUseCase := usecases.NewCreateCrimeUseCase(crimeRepo)
@@ -92,8 +95,11 @@ func (s *Server) SetupRoutes(db *sqlx.DB) error {
 		getCrimeUseCase,
 	)
 
+	// Crear middleware de autenticación
+	authMiddleware := middleware.AuthMiddleware(securityRepo)
+
 	// Configurar rutas
-	routes.SetupCrimeRoutes(s.router, crimeController)
+	routes.SetupCrimeRoutes(s.router, crimeController, authMiddleware)
 
 	// Imprimir rutas registradas
 	fmt.Println("\nRutas registradas:")

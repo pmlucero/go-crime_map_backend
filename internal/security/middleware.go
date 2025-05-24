@@ -39,13 +39,8 @@ func APIKeyMiddleware(repo *Repository) func(http.Handler) http.Handler {
 				return
 			}
 
-			if storedKey.Status != "active" {
-				http.Error(w, "API Key revocada", http.StatusUnauthorized)
-				return
-			}
-
-			if storedKey.IsExpired() {
-				http.Error(w, "API Key expirada", http.StatusUnauthorized)
+			if !storedKey.IsActiveBool {
+				http.Error(w, "API Key inactiva", http.StatusUnauthorized)
 				return
 			}
 

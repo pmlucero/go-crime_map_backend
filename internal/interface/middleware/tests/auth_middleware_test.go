@@ -60,10 +60,10 @@ func TestAuthMiddleware_ValidAPIKey_ReturnsOK(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	mockRepo := new(MockSecurityRepository)
 	mockRepo.On("ValidateAPIKey", mock.Anything, "valid-key").Return(&entities.APIKey{
-		ID:        "test-user",
-		Key:       "valid-key",
-		Status:    "active",
-		ExpiresAt: time.Now().Add(24 * time.Hour),
+		ID:           "test-user",
+		Key:          "valid-key",
+		ExpiresAt:    time.Now().Add(24 * time.Hour),
+		IsActiveBool: true,
 	}, nil)
 
 	router := gin.New()
