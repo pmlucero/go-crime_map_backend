@@ -19,11 +19,11 @@ type CreateCrimeInput struct {
 	Latitude      float64
 	Longitude     float64
 	Address       string
-	AddressNumber *string
-	City          *string
-	Province      *string
-	Country       *string
-	ZipCode       *string
+	AddressNumber string
+	City          string
+	Province      string
+	Country       string
+	ZipCode       string
 }
 
 // CreateCrimeUseCase implementa la lógica de negocio para crear delitos
@@ -59,25 +59,25 @@ func (uc *CreateCrimeUseCase) Execute(ctx context.Context, input usecases.Create
 	if input.Address == "" {
 		return nil, fmt.Errorf("la dirección es requerida")
 	}
-	if input.AddressNumber == nil {
+	if input.AddressNumber == "" {
 		return nil, fmt.Errorf("el número de la dirección es requerido")
 	}
-	if input.City == nil {
+	if input.City == "" {
 		return nil, fmt.Errorf("la ciudad es requerida")
 	}
-	if input.Province == nil {
+	if input.Province == "" {
 		return nil, fmt.Errorf("la provincia es requerida")
 	}
-	if input.Country == nil {
+	if input.Country == "" {
 		return nil, fmt.Errorf("el país es requerido")
 	}
-	if input.ZipCode == nil {
+	if input.ZipCode == "" {
 		return nil, fmt.Errorf("el código postal es requerido")
 	}
 
 	// Crear entidad Crime
 	crime := &entities.Crime{
-		ID:          uuid.New().String(),
+		UUID:        uuid.New().String(),
 		Title:       input.Title,
 		Description: input.Description,
 		Type:        input.Type,

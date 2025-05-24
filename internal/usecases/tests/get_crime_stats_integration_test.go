@@ -8,12 +8,12 @@ import (
 	"go-crime_map_backend/internal/infrastructure/database"
 	infraRepo "go-crime_map_backend/internal/infrastructure/repositories"
 	"go-crime_map_backend/internal/usecases"
-	"go-crime_map_backend/internal/utils"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetCrimeStatsUseCase_Integration(t *testing.T) {
+	// Arrange
 	// Configurar base de datos de test
 	db := database.SetupTestDB(t)
 	defer database.CleanupTestDB(t)
@@ -32,11 +32,11 @@ func TestGetCrimeStatsUseCase_Integration(t *testing.T) {
 			Latitude:      -34.603722,
 			Longitude:     -58.381592,
 			Address:       "Av. Corrientes",
-			AddressNumber: utils.StringPtr("1234"),
-			City:          utils.StringPtr("Buenos Aires"),
-			Province:      utils.StringPtr("Buenos Aires"),
-			Country:       utils.StringPtr("Argentina"),
-			ZipCode:       utils.StringPtr("C1043"),
+			AddressNumber: "1234",
+			City:          "Buenos Aires",
+			Province:      "Buenos Aires",
+			Country:       "Argentina",
+			ZipCode:       "C1043",
 		},
 		{
 			Title:         "Vandalismo",
@@ -45,11 +45,11 @@ func TestGetCrimeStatsUseCase_Integration(t *testing.T) {
 			Latitude:      -34.604722,
 			Longitude:     -58.382592,
 			Address:       "Av. Corrientes",
-			AddressNumber: utils.StringPtr("2345"),
-			City:          utils.StringPtr("Buenos Aires"),
-			Province:      utils.StringPtr("Buenos Aires"),
-			Country:       utils.StringPtr("Argentina"),
-			ZipCode:       utils.StringPtr("C1043"),
+			AddressNumber: "2345",
+			City:          "Buenos Aires",
+			Province:      "Buenos Aires",
+			Country:       "Argentina",
+			ZipCode:       "C1043",
 		},
 		{
 			Title:         "Hurto",
@@ -58,11 +58,11 @@ func TestGetCrimeStatsUseCase_Integration(t *testing.T) {
 			Latitude:      -34.605722,
 			Longitude:     -58.383592,
 			Address:       "Av. Corrientes",
-			AddressNumber: utils.StringPtr("3456"),
-			City:          utils.StringPtr("Buenos Aires"),
-			Province:      utils.StringPtr("Buenos Aires"),
-			Country:       utils.StringPtr("Argentina"),
-			ZipCode:       utils.StringPtr("C1043"),
+			AddressNumber: "3456",
+			City:          "Buenos Aires",
+			Province:      "Buenos Aires",
+			Country:       "Argentina",
+			ZipCode:       "C1043",
 		},
 		{
 			Title:         "Robo de auto",
@@ -71,11 +71,11 @@ func TestGetCrimeStatsUseCase_Integration(t *testing.T) {
 			Latitude:      -34.606722,
 			Longitude:     -58.384592,
 			Address:       "Av. Corrientes",
-			AddressNumber: utils.StringPtr("4567"),
-			City:          utils.StringPtr("Buenos Aires"),
-			Province:      utils.StringPtr("Buenos Aires"),
-			Country:       utils.StringPtr("Argentina"),
-			ZipCode:       utils.StringPtr("C1043"),
+			AddressNumber: "4567",
+			City:          "Buenos Aires",
+			Province:      "Buenos Aires",
+			Country:       "Argentina",
+			ZipCode:       "C1043",
 		},
 	}
 
@@ -85,8 +85,10 @@ func TestGetCrimeStatsUseCase_Integration(t *testing.T) {
 		assert.NotNil(t, crime)
 	}
 
-	// Ejecutar el caso de uso
+	// Act
 	stats, err := useCase.Execute(context.Background())
+
+	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, stats)
 

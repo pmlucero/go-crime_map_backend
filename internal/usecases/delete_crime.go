@@ -21,14 +21,14 @@ func NewDeleteCrimeUseCase(repo repositories.CrimeRepository) *DeleteCrimeUseCas
 }
 
 // Execute ejecuta el caso de uso
-func (uc *DeleteCrimeUseCase) Execute(ctx context.Context, id string) error {
+func (uc *DeleteCrimeUseCase) Execute(ctx context.Context, uuid string) error {
 	// Validar datos de entrada
-	if id == "" {
-		return fmt.Errorf("el ID es requerido")
+	if uuid == "" {
+		return fmt.Errorf("el UUID es requerido")
 	}
 
 	// Verificar que el delito existe
-	crime, err := uc.crimeRepository.GetByID(ctx, id)
+	crime, err := uc.crimeRepository.GetByUUID(ctx, uuid)
 	if err != nil {
 		return fmt.Errorf("error al obtener el delito: %w", err)
 	}
@@ -43,7 +43,7 @@ func (uc *DeleteCrimeUseCase) Execute(ctx context.Context, id string) error {
 	}
 
 	// Eliminar del repositorio
-	if err := uc.crimeRepository.Delete(ctx, id); err != nil {
+	if err := uc.crimeRepository.Delete(ctx, crime.ID); err != nil {
 		return fmt.Errorf("error al eliminar el delito: %w", err)
 	}
 

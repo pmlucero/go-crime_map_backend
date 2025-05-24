@@ -40,6 +40,36 @@ func NewCrimeController(
 	}
 }
 
+// GetCreateUseCase retorna el caso de uso de creación
+func (c *CrimeController) GetCreateUseCase() usecases.CreateCrimeUseCase {
+	return c.createUseCase
+}
+
+// GetListUseCase retorna el caso de uso de listado
+func (c *CrimeController) GetListUseCase() usecases.ListCrimesUseCase {
+	return c.listUseCase
+}
+
+// GetUpdateStatusUseCase retorna el caso de uso de actualización de estado
+func (c *CrimeController) GetUpdateStatusUseCase() usecases.UpdateCrimeStatusUseCase {
+	return c.updateStatusUseCase
+}
+
+// GetDeleteUseCase retorna el caso de uso de eliminación
+func (c *CrimeController) GetDeleteUseCase() usecases.DeleteCrimeUseCase {
+	return c.deleteUseCase
+}
+
+// GetStatsUseCase retorna el caso de uso de estadísticas
+func (c *CrimeController) GetStatsUseCase() usecases.GetCrimeStatsUseCase {
+	return c.getStatsUseCase
+}
+
+// GetCrimeUseCase retorna el caso de uso de obtención de delito
+func (c *CrimeController) GetCrimeUseCase() usecases.GetCrimeUseCase {
+	return c.getCrimeUseCase
+}
+
 // CreateCrimeRequest representa la estructura de la petición para crear un delito
 type CreateCrimeRequest struct {
 	Title         string  `json:"title" binding:"required" example:"Robo a mano armada"`
@@ -48,11 +78,11 @@ type CreateCrimeRequest struct {
 	Latitude      float64 `json:"latitude" binding:"required" example:"-34.603722"`
 	Longitude     float64 `json:"longitude" binding:"required" example:"-58.381592"`
 	Address       string  `json:"address" binding:"required" example:"Av. Corrientes"`
-	AddressNumber *string `json:"address_number" binding:"required" example:"1234"`
-	City          *string `json:"city" binding:"required" example:"Buenos Aires"`
-	Province      *string `json:"province" binding:"required" example:"Buenos Aires"`
-	Country       *string `json:"country" binding:"required" example:"Argentina"`
-	ZipCode       *string `json:"zip_code" binding:"required" example:"1000"`
+	AddressNumber string  `json:"address_number" binding:"required" example:"1234"`
+	City          string  `json:"city" binding:"required" example:"Buenos Aires"`
+	Province      string  `json:"province" binding:"required" example:"Buenos Aires"`
+	Country       string  `json:"country" binding:"required" example:"Argentina"`
+	ZipCode       string  `json:"zip_code" binding:"required" example:"1000"`
 }
 
 // @Summary      Crear un nuevo delito
@@ -63,6 +93,7 @@ type CreateCrimeRequest struct {
 // @Param        crime body CreateCrimeRequest true "Datos del delito"
 // @Success      201  {object}  entities.Crime
 // @Failure      400  {object}  ErrorResponse
+// @Failure      401  {object}  ErrorResponse
 // @Failure      500  {object}  ErrorResponse
 // @Router       /crimes [post]
 // @Security     ApiKeyAuth
@@ -87,8 +118,12 @@ func (c *CrimeController) CreateCrime(ctx *gin.Context) {
 		ZipCode:       req.ZipCode,
 	}
 
-	crime, err := c.createUseCase.Execute(ctx, input)
+	crime, err := c.createUseCase.Execute(ctx.Request.Context(), input)
 	if err != nil {
+		if err.Error() == "unauthorized" || err.Error() == "invalid api key" {
+			ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -126,6 +161,7 @@ type ListCrimesResponse struct {
 // @Param        limit query int false "Límite de resultados por página" default(10)
 // @Param        page query int false "Número de página" default(1)
 // @Success      200  {object}  ListCrimesResponse
+// @Failure      401  {object}  ErrorResponse
 // @Failure      500  {object}  ErrorResponse
 // @Router       /crimes [get]
 // @Security     ApiKeyAuth
@@ -140,6 +176,10 @@ func (c *CrimeController) ListCrimes(ctx *gin.Context) {
 
 	crimes, err := c.listUseCase.Execute(ctx, params)
 	if err != nil {
+		if err.Error() == "unauthorized" || err.Error() == "invalid api key" {
+			ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -161,12 +201,17 @@ type UpdateStatusRequest struct {
 // @Param        status body UpdateStatusRequest true "Nuevo estado"
 // @Success      200  {object}  map[string]interface{}
 // @Failure      400  {object}  ErrorResponse
+// @Failure      401  {object}  ErrorResponse
 // @Failure      404  {object}  ErrorResponse
 // @Failure      500  {object}  ErrorResponse
 // @Router       /crimes/{id}/status [patch]
 // @Security     ApiKeyAuth
 func (c *CrimeController) UpdateCrimeStatus(ctx *gin.Context) {
 	id := ctx.Param("id")
+	if id == "" {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: "el UUID es requerido"})
+		return
+	}
 	var req UpdateStatusRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
@@ -174,11 +219,23 @@ func (c *CrimeController) UpdateCrimeStatus(ctx *gin.Context) {
 	}
 
 	input := usecases.UpdateCrimeStatusInput{
-		ID:     id,
-		Status: req.Status,
+		UUID:   id,
+		Status: strings.ToUpper(req.Status),
 	}
 
-	if err := c.updateStatusUseCase.Execute(ctx, input); err != nil {
+	if err := c.updateStatusUseCase.Execute(ctx.Request.Context(), input); err != nil {
+		if err.Error() == "unauthorized" || err.Error() == "invalid api key" {
+			ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+			return
+		}
+		if err.Error() == "invalid status" {
+			ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			return
+		}
+		if err.Error() == "crime not found" {
+			ctx.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
@@ -193,19 +250,33 @@ func (c *CrimeController) UpdateCrimeStatus(ctx *gin.Context) {
 // @Produce      json
 // @Param        id path string true "ID del delito"
 // @Success      200  {object}  map[string]interface{}
+// @Failure      401  {object}  ErrorResponse
 // @Failure      404  {object}  ErrorResponse
 // @Failure      500  {object}  ErrorResponse
 // @Router       /crimes/{id} [delete]
 // @Security     ApiKeyAuth
 func (c *CrimeController) DeleteCrime(ctx *gin.Context) {
 	id := ctx.Param("id")
+	if id == "" {
+		ctx.JSON(http.StatusBadRequest, ErrorResponse{Error: "id is required"})
+		return
+	}
 
-	if err := c.deleteUseCase.Execute(ctx, id); err != nil {
+	err := c.deleteUseCase.Execute(ctx.Request.Context(), id)
+	if err != nil {
+		if strings.Contains(err.Error(), "unauthorized") || strings.Contains(err.Error(), "invalid api key") {
+			ctx.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+			return
+		}
+		if strings.Contains(err.Error(), "not found") {
+			ctx.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	ctx.Status(http.StatusOK)
+	ctx.Status(http.StatusNoContent)
 }
 
 // @Summary      Obtener estadísticas de delitos
@@ -214,6 +285,7 @@ func (c *CrimeController) DeleteCrime(ctx *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Success      200  {object}  entities.CrimeStats
+// @Failure      401  {object}  ErrorResponse
 // @Failure      500  {object}  ErrorResponse
 // @Router       /crimes/stats [get]
 // @Security     ApiKeyAuth
@@ -239,6 +311,7 @@ func (c *CrimeController) GetCrimeStats(ctx *gin.Context) {
 // @Produce      json
 // @Param        id path string true "ID del delito"
 // @Success      200  {object}  entities.Crime
+// @Failure      401  {object}  ErrorResponse
 // @Failure      404  {object}  ErrorResponse
 // @Failure      500  {object}  ErrorResponse
 // @Router       /crimes/{id} [get]
@@ -246,8 +319,12 @@ func (c *CrimeController) GetCrimeStats(ctx *gin.Context) {
 func (c *CrimeController) GetCrime(ctx *gin.Context) {
 	id := ctx.Param("id")
 
-	crime, err := c.getCrimeUseCase.Execute(ctx, id)
+	crime, err := c.getCrimeUseCase.Execute(ctx.Request.Context(), id)
 	if err != nil {
+		if err.Error() == "crime not found" {
+			ctx.JSON(http.StatusNotFound, ErrorResponse{Error: err.Error()})
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 		return
 	}

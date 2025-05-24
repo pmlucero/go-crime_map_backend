@@ -1,0 +1,133 @@
+golangci-lint............................................................[41mFailed[m
+[2m- hook id: golangci-lint[m
+[2m- exit code: 1[m
+
+[1minternal/domain/repositories/mocks/CrimeRepository.go:29[0m:12: [31m_m.Called undefined (type *CrimeRepository has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx, crime)
+	          [33m^[0m
+[1minternal/domain/repositories/mocks/CrimeRepository.go:76[0m:12: [31m_m.Called undefined (type *CrimeRepository has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx, id)
+	          [33m^[0m
+[1minternal/domain/repositories/mocks/CrimeRepository.go:123[0m:12: [31m_m.Called undefined (type *CrimeRepository has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx, id)
+	          [33m^[0m
+[1minternal/domain/repositories/mocks/CrimeRepository.go:424[0m:26: [31mmock.AssertExpectations undefined (type *CrimeRepository has no field or method AssertExpectations)[0m (typecheck)
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+	                        [33m^[0m
+[1minternal/domain/repositories/mocks/SecurityRepository.go:27[0m:12: [31m_m.Called undefined (type *SecurityRepository has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx, apiKey)
+	          [33m^[0m
+[1minternal/domain/repositories/mocks/SecurityRepository.go:93[0m:26: [31mmock.AssertExpectations undefined (type *SecurityRepository has no field or method AssertExpectations)[0m (typecheck)
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+	                        [33m^[0m
+[1minternal/domain/usecases/mocks/CreateCrimeUseCase.go:29[0m:12: [31m_m.Called undefined (type *CreateCrimeUseCase has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx, input)
+	          [33m^[0m
+[1minternal/domain/usecases/mocks/CreateCrimeUseCase.go:95[0m:26: [31mmock.AssertExpectations undefined (type *CreateCrimeUseCase has no field or method AssertExpectations)[0m (typecheck)
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+	                        [33m^[0m
+[1minternal/domain/usecases/mocks/DeleteCrimeUseCase.go:26[0m:12: [31m_m.Called undefined (type *DeleteCrimeUseCase has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx, uuid)
+	          [33m^[0m
+[1minternal/domain/usecases/mocks/DeleteCrimeUseCase.go:80[0m:26: [31mmock.AssertExpectations undefined (type *DeleteCrimeUseCase has no field or method AssertExpectations)[0m (typecheck)
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+	                        [33m^[0m
+[1minternal/domain/usecases/mocks/GetCrimeStatsUseCase.go:27[0m:12: [31m_m.Called undefined (type *GetCrimeStatsUseCase has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx)
+	          [33m^[0m
+[1minternal/domain/usecases/mocks/GetCrimeStatsUseCase.go:92[0m:26: [31mmock.AssertExpectations undefined (type *GetCrimeStatsUseCase has no field or method AssertExpectations)[0m (typecheck)
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+	                        [33m^[0m
+[1minternal/domain/usecases/mocks/GetCrimeUseCase.go:27[0m:12: [31m_m.Called undefined (type *GetCrimeUseCase has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx, uuid)
+	          [33m^[0m
+[1minternal/domain/usecases/mocks/GetCrimeUseCase.go:93[0m:26: [31mmock.AssertExpectations undefined (type *GetCrimeUseCase has no field or method AssertExpectations)[0m (typecheck)
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+	                        [33m^[0m
+[1minternal/domain/usecases/mocks/ListCrimesUseCase.go:29[0m:12: [31m_m.Called undefined (type *ListCrimesUseCase has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx, params)
+	          [33m^[0m
+[1minternal/domain/usecases/mocks/ListCrimesUseCase.go:95[0m:26: [31mmock.AssertExpectations undefined (type *ListCrimesUseCase has no field or method AssertExpectations)[0m (typecheck)
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+	                        [33m^[0m
+[1minternal/domain/usecases/mocks/UpdateCrimeStatusUseCase.go:27[0m:12: [31m_m.Called undefined (type *UpdateCrimeStatusUseCase has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx, input)
+	          [33m^[0m
+[1minternal/domain/usecases/mocks/UpdateCrimeStatusUseCase.go:81[0m:26: [31mmock.AssertExpectations undefined (type *UpdateCrimeStatusUseCase has no field or method AssertExpectations)[0m (typecheck)
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+	                        [33m^[0m
+[1minternal/usecases/mocks/CreateCrimeUseCaseInterface.go:29[0m:12: [31m_m.Called undefined (type *MockCreateCrimeUseCaseInterface has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx, input)
+	          [33m^[0m
+[1minternal/usecases/mocks/CreateCrimeUseCaseInterface.go:95[0m:26: [31mmock.AssertExpectations undefined (type *MockCreateCrimeUseCaseInterface has no field or method AssertExpectations)[0m (typecheck)
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+	                        [33m^[0m
+[1minternal/usecases/mocks/DeleteCrimeUseCaseInterface.go:26[0m:12: [31m_m.Called undefined (type *MockDeleteCrimeUseCaseInterface has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx, id)
+	          [33m^[0m
+[1minternal/usecases/mocks/DeleteCrimeUseCaseInterface.go:80[0m:26: [31mmock.AssertExpectations undefined (type *MockDeleteCrimeUseCaseInterface has no field or method AssertExpectations)[0m (typecheck)
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+	                        [33m^[0m
+[1minternal/usecases/mocks/GetCrimeStatsUseCaseInterface.go:29[0m:12: [31m_m.Called undefined (type *MockGetCrimeStatsUseCaseInterface has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx, input)
+	          [33m^[0m
+[1minternal/usecases/mocks/GetCrimeStatsUseCaseInterface.go:95[0m:26: [31mmock.AssertExpectations undefined (type *MockGetCrimeStatsUseCaseInterface has no field or method AssertExpectations)[0m (typecheck)
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+	                        [33m^[0m
+[1minternal/usecases/mocks/GetCrimeUseCaseInterface.go:27[0m:12: [31m_m.Called undefined (type *MockGetCrimeUseCaseInterface has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx, id)
+	          [33m^[0m
+[1minternal/usecases/mocks/GetCrimeUseCaseInterface.go:93[0m:26: [31mmock.AssertExpectations undefined (type *MockGetCrimeUseCaseInterface has no field or method AssertExpectations)[0m (typecheck)
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+	                        [33m^[0m
+[1minternal/usecases/mocks/ListCrimesUseCaseInterface.go:27[0m:12: [31m_m.Called undefined (type *MockListCrimesUseCaseInterface has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx, input)
+	          [33m^[0m
+[1minternal/usecases/mocks/ListCrimesUseCaseInterface.go:93[0m:26: [31mmock.AssertExpectations undefined (type *MockListCrimesUseCaseInterface has no field or method AssertExpectations)[0m (typecheck)
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+	                        [33m^[0m
+[1minternal/usecases/mocks/UpdateCrimeStatusUseCaseInterface.go:27[0m:12: [31m_m.Called undefined (type *MockUpdateCrimeStatusUseCaseInterface has no field or method Called)[0m (typecheck)
+	ret := _m.Called(ctx, input)
+	          [33m^[0m
+[1minternal/usecases/mocks/UpdateCrimeStatusUseCaseInterface.go:81[0m:26: [31mmock.AssertExpectations undefined (type *MockUpdateCrimeStatusUseCaseInterface has no field or method AssertExpectations)[0m (typecheck)
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+	                        [33m^[0m
+[1minternal/interface/controllers/tests/crime_controller_test.go:76[0m:12: [31mm.Called undefined (type *MockDeleteCrimeUseCase has no field or method Called)[0m (typecheck)
+	args := m.Called(ctx, crimeID)
+	          [33m^[0m
+[1minternal/interface/controllers/tests/crime_controller_test.go:96[0m:12: [31mm.Called undefined (type *MockGetCrimeUseCase has no field or method Called)[0m (typecheck)
+	args := m.Called(ctx, crimeID)
+	          [33m^[0m
+[1minternal/interface/controllers/tests/security_controller_test.go:26[0m:12: [31mm.Called undefined (type *MockSecurityRepository has no field or method Called)[0m (typecheck)
+	args := m.Called(ctx, apiKey)
+	          [33m^[0m
+[1minternal/interface/controllers/tests/security_controller_test.go:44[0m:11: [31mmockRepo.On undefined (type *MockSecurityRepository has no field or method On)[0m (typecheck)
+	mockRepo.On("ValidateAPIKey", mock.Anything, "test-api-key").Return(validAPIKey, nil)
+	         [33m^[0m
+[1minternal/interface/controllers/tests/security_controller_test.go:55[0m:11: [31mmockRepo.AssertExpectations undefined (type *MockSecurityRepository has no field or method AssertExpectations)[0m (typecheck)
+	mockRepo.AssertExpectations(t)
+	         [33m^[0m
+[1minternal/interface/controllers/tests/security_controller_test.go:79[0m:11: [31mmockRepo.On undefined (type *MockSecurityRepository has no field or method On)[0m (typecheck)
+	mockRepo.On("ValidateAPIKey", mock.Anything, "invalid-key").Return(nil, errors.New("invalid api key"))
+	         [33m^[0m
+[1minternal/interface/controllers/tests/security_controller_test.go:91[0m:11: [31mmockRepo.AssertExpectations undefined (type *MockSecurityRepository has no field or method AssertExpectations)[0m (typecheck)
+	mockRepo.AssertExpectations(t)
+	         [33m^[0m
+[1minternal/interface/controllers/tests/security_controller_test.go:105[0m:11: [31mmockRepo.On undefined (type *MockSecurityRepository has no field or method On)[0m (typecheck)
+	mockRepo.On("ValidateAPIKey", mock.Anything, "inactive-key").Return(inactiveKey, nil)
+	         [33m^[0m
+[1minternal/interface/controllers/tests/security_controller_test.go:117[0m:11: [31mmockRepo.AssertExpectations undefined (type *MockSecurityRepository has no field or method AssertExpectations)[0m (typecheck)
+	mockRepo.AssertExpectations(t)
+	         [33m^[0m
+[1minternal/interface/middleware/tests/auth_middleware_test.go:25[0m:12: [31mm.Called undefined (type *MockSecurityRepository has no field or method Called)[0m (typecheck)
+	args := m.Called(ctx, apiKey)
+	          [33m^[0m
+
+go fmt...................................................................[42mPassed[m
+go imports...............................................................[42mPassed[m
+go-unit-tests............................................................[42mPassed[m
+go-mod-tidy..............................................................[42mPassed[m
+Test Structure Validation................................................[42mPassed[m
+Test Naming Convention...................................................[42mPassed[m
+Test Organization Pattern................................................[42mPassed[m
+Test Coverage Comment....................................................[42mPassed[m

@@ -42,7 +42,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error al conectar a la base de datos: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("error cerrando la base de datos: %v", err)
+		}
+	}()
 
 	// Crear servidor
 	srv := server.NewServer()

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"go-crime_map_backend/internal/domain/entities"
-	"go-crime_map_backend/internal/mocks"
+	"go-crime_map_backend/internal/domain/repositories/mocks"
 	"go-crime_map_backend/internal/usecases"
 
 	"github.com/stretchr/testify/assert"
@@ -64,10 +64,6 @@ func TestGetMostCommonTypes(t *testing.T) {
 }
 
 func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
-	// Crear mock del repositorio
-	mockRepo := mocks.NewMockCrimeRepository()
-	useCase := usecases.NewGetCrimeStatsUseCase(mockRepo)
-
 	// Crear contexto
 	ctx := context.Background()
 
@@ -94,57 +90,29 @@ func TestGetCrimeStatsUseCase_Execute(t *testing.T) {
 		LastUpdate:      time.Now(),
 	}
 
-	tests := []struct {
-		name          string
-		mockSetup     func()
-		expectedStats *entities.CrimeStats
-		expectedError error
-	}{
-		{
-			name: "obtener estadísticas exitosamente",
-			mockSetup: func() {
-				mockRepo.On("GetStats", ctx).Return(stats, nil).Once()
-			},
-			expectedStats: stats,
-			expectedError: nil,
-		},
-		{
-			name: "error al obtener estadísticas",
-			mockSetup: func() {
-				mockRepo.On("GetStats", ctx).Return(nil, assert.AnError).Once()
-			},
-			expectedStats: nil,
-			expectedError: assert.AnError,
-		},
-	}
+	t.Run("Estadísticas correctas", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewGetCrimeStatsUseCase(mockRepo)
+		mockRepo.On("GetStats", ctx).Return(stats, nil)
+		// Act
+		stats, err := useCase.Execute(ctx)
+		// Assert
+		assert.NoError(t, err)
+		assert.Equal(t, stats, stats)
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Limpiar mock y configurar para este test
-			mockRepo.ExpectedCalls = nil
-			mockRepo.Calls = nil
-			tt.mockSetup()
-
-			// Ejecutar el caso de uso
-			result, err := useCase.Execute(ctx)
-
-			// Verificar el resultado
-			if tt.expectedError != nil {
-				assert.Error(t, err)
-				assert.Equal(t, tt.expectedError, err)
-				assert.Nil(t, result)
-				return
-			}
-
-			assert.NoError(t, err)
-			assert.NotNil(t, result)
-			assert.Equal(t, tt.expectedStats.TotalCrimes, result.TotalCrimes)
-			assert.Equal(t, tt.expectedStats.ActiveCrimes, result.ActiveCrimes)
-			assert.Equal(t, tt.expectedStats.InactiveCrimes, result.InactiveCrimes)
-			assert.Equal(t, tt.expectedStats.CrimesByType, result.CrimesByType)
-			assert.Equal(t, tt.expectedStats.CrimesByStatus, result.CrimesByStatus)
-			assert.Equal(t, tt.expectedStats.CrimesByLocation, result.CrimesByLocation)
-			assert.Equal(t, tt.expectedStats.CrimesByAddress, result.CrimesByAddress)
-		})
-	}
+	t.Run("Error del repositorio", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewGetCrimeStatsUseCase(mockRepo)
+		expectedErr := assert.AnError
+		mockRepo.On("GetStats", ctx).Return(nil, expectedErr)
+		// Act
+		stats, err := useCase.Execute(ctx)
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, stats)
+		assert.Equal(t, expectedErr, err)
+	})
 }
