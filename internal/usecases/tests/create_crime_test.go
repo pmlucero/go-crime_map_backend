@@ -2,193 +2,262 @@ package tests
 
 import (
 	"context"
+	"errors"
 	"testing"
-	"time"
-
-	"go-crime_map_backend/internal/domain/entities"
-	"go-crime_map_backend/internal/usecases"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"go-crime_map_backend/internal/domain/entities"
+	"go-crime_map_backend/internal/domain/repositories/mocks"
+	domain_usecases "go-crime_map_backend/internal/domain/usecases"
+	"go-crime_map_backend/internal/usecases"
 )
 
-// MockCrimeRepository es un mock del repositorio para pruebas
-type MockCrimeRepository struct {
-	mock.Mock
-}
-
-func (m *MockCrimeRepository) Create(ctx context.Context, crime *entities.Crime) error {
-	args := m.Called(ctx, crime)
-	return args.Error(0)
-}
-
-func (m *MockCrimeRepository) GetByID(ctx context.Context, id string) (*entities.Crime, error) {
-	args := m.Called(ctx, id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*entities.Crime), args.Error(1)
-}
-
-func (m *MockCrimeRepository) GetAll(ctx context.Context) ([]*entities.Crime, error) {
-	args := m.Called(ctx)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]*entities.Crime), args.Error(1)
-}
-
-func (m *MockCrimeRepository) Update(ctx context.Context, crime *entities.Crime) error {
-	args := m.Called(ctx, crime)
-	return args.Error(0)
-}
-
-func (m *MockCrimeRepository) Delete(ctx context.Context, id string) error {
-	args := m.Called(ctx, id)
-	return args.Error(0)
-}
-
 func TestCreateCrimeUseCase_Execute(t *testing.T) {
-	mockRepo := new(MockCrimeRepository)
-	useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+	ctx := context.Background()
 
-	// Datos de prueba comunes
-	validLocation := usecases.Location{
-		Latitude:  -34.603722,
-		Longitude: -58.381592,
-		Address:   "Av. Corrientes 1234",
+	// Función helper para crear un input válido base
+	createValidInput := func() domain_usecases.CreateCrimeInput {
+		return domain_usecases.CreateCrimeInput{
+			Title:         "Robo",
+			Description:   "Robo en tienda",
+			Type:          "ROBBERY",
+			Latitude:      -34.603722,
+			Longitude:     -58.381592,
+			Address:       "Av. Corrientes",
+			AddressNumber: "1234",
+			City:          "Buenos Aires",
+			Province:      "CABA",
+			Country:       "Argentina",
+			ZipCode:       "C1043",
+		}
 	}
 
-	tests := []struct {
-		name          string
-		input         usecases.CreateCrimeInput
-		expectedError string
-		setupMock     func()
-	}{
-		{
-			name: "creación exitosa de delito",
-			input: usecases.CreateCrimeInput{
-				Type:        "ROBO",
-				Description: "Robo a mano armada",
-				Location:    validLocation,
-				Date:        time.Now().Add(-1 * time.Hour),
-			},
-			setupMock: func() {
-				mockRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.Crime")).Return(nil)
-				mockRepo.On("GetAll", mock.Anything).Return([]*entities.Crime{}, nil)
-			},
-		},
-		{
-			name: "error - tipo de delito vacío",
-			input: usecases.CreateCrimeInput{
-				Type:        "",
-				Description: "Robo a mano armada",
-				Location:    validLocation,
-				Date:        time.Now().Add(-1 * time.Hour),
-			},
-			expectedError: "el tipo de delito es inválido",
-		},
-		{
-			name: "error - descripción vacía",
-			input: usecases.CreateCrimeInput{
-				Type:        "ROBO",
-				Description: "",
-				Location:    validLocation,
-				Date:        time.Now().Add(-1 * time.Hour),
-			},
-			expectedError: "la descripción es requerida",
-		},
-		{
-			name: "error - fecha futura",
-			input: usecases.CreateCrimeInput{
-				Type:        "ROBO",
-				Description: "Robo a mano armada",
-				Location:    validLocation,
-				Date:        time.Now().Add(24 * time.Hour),
-			},
-			expectedError: "la fecha del delito no puede ser futura",
-		},
-		{
-			name: "error - latitud inválida",
-			input: usecases.CreateCrimeInput{
-				Type:        "ROBO",
-				Description: "Robo a mano armada",
-				Location: usecases.Location{
-					Latitude:  91.0, // Latitud inválida
-					Longitude: -58.381592,
-					Address:   "Av. Corrientes 1234",
-				},
-				Date: time.Now().Add(-1 * time.Hour),
-			},
-			expectedError: "latitud inválida",
-		},
-		{
-			name: "error - longitud inválida",
-			input: usecases.CreateCrimeInput{
-				Type:        "ROBO",
-				Description: "Robo a mano armada",
-				Location: usecases.Location{
-					Latitude:  -34.603722,
-					Longitude: 181.0, // Longitud inválida
-					Address:   "Av. Corrientes 1234",
-				},
-				Date: time.Now().Add(-1 * time.Hour),
-			},
-			expectedError: "longitud inválida",
-		},
-		{
-			name: "error - fallo en el repositorio",
-			input: usecases.CreateCrimeInput{
-				Type:        "ROBO",
-				Description: "Robo a mano armada",
-				Location:    validLocation,
-				Date:        time.Now().Add(-1 * time.Hour),
-			},
-			expectedError: "assert.AnError general error for testing",
-			setupMock: func() {
-				mockRepo.On("GetAll", mock.Anything).Return([]*entities.Crime{}, nil)
-				mockRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.Crime")).Return(assert.AnError)
-			},
-		},
-	}
+	t.Run("Creación exitosa", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+		input := createValidInput()
+		mockRepo.On("Create", ctx, mock.AnythingOfType("*entities.Crime")).
+			Run(func(args mock.Arguments) {
+				crime := args.Get(1).(*entities.Crime)
+				crime.ID = 1
+			}).
+			Return(nil)
+		// Act
+		crime, err := useCase.Execute(ctx, input)
+		// Assert
+		assert.NoError(t, err)
+		assert.NotNil(t, crime)
+		assert.NotEmpty(t, crime.ID)
+		assert.Equal(t, input.Title, crime.Title)
+		assert.Equal(t, input.Description, crime.Description)
+		assert.Equal(t, input.Type, crime.Type)
+		assert.Equal(t, "ACTIVE", crime.Status)
+		assert.Equal(t, input.Latitude, crime.Location.Latitude)
+		assert.Equal(t, input.Longitude, crime.Location.Longitude)
+		assert.Equal(t, input.Address, crime.Location.Address)
+		assert.Equal(t, input.AddressNumber, crime.Location.AddressNumber)
+		assert.Equal(t, input.City, crime.Location.City)
+		assert.Equal(t, input.Province, crime.Location.Province)
+		assert.Equal(t, input.Country, crime.Location.Country)
+		assert.Equal(t, input.ZipCode, crime.Location.ZipCode)
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Limpiar las expectativas del mock
-			mockRepo.ExpectedCalls = nil
+	t.Run("Error - título vacío", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+		input := createValidInput()
+		input.Title = ""
+		// Act
+		crime, err := useCase.Execute(ctx, input)
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, crime)
+		assert.Equal(t, "el título es requerido", err.Error())
+	})
 
-			// Configurar el mock si es necesario
-			if tt.setupMock != nil {
-				tt.setupMock()
-			} else if tt.expectedError == "" {
-				// Si no hay error esperado y no hay setup específico, configurar el mock por defecto
-				mockRepo.On("GetAll", mock.Anything).Return([]*entities.Crime{}, nil)
-				mockRepo.On("Create", mock.Anything, mock.AnythingOfType("*entities.Crime")).Return(nil)
-			}
+	t.Run("Error - descripción vacía", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+		input := createValidInput()
+		input.Description = ""
+		// Act
+		crime, err := useCase.Execute(ctx, input)
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, crime)
+		assert.Equal(t, "la descripción es requerida", err.Error())
+	})
 
-			// Ejecutar el caso de uso
-			result, err := useCase.Execute(context.Background(), tt.input)
+	t.Run("Error - tipo vacío", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+		input := createValidInput()
+		input.Type = ""
+		// Act
+		crime, err := useCase.Execute(ctx, input)
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, crime)
+		assert.Equal(t, "el tipo es requerido", err.Error())
+	})
 
-			// Verificar el resultado
-			if tt.expectedError != "" {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.expectedError)
-				assert.Nil(t, result)
-				return
-			}
+	t.Run("Error - latitud inválida", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+		input := createValidInput()
+		input.Latitude = 91
+		// Act
+		crime, err := useCase.Execute(ctx, input)
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, crime)
+		assert.Equal(t, "la latitud debe estar entre -90 y 90", err.Error())
+	})
 
-			assert.NoError(t, err)
-			assert.NotNil(t, result)
-			assert.NotEmpty(t, result.ID)
-			assert.Equal(t, tt.input.Type, result.Type)
-			assert.Equal(t, tt.input.Description, result.Description)
-			assert.Equal(t, tt.input.Location.Latitude, result.Location.Latitude)
-			assert.Equal(t, tt.input.Location.Longitude, result.Location.Longitude)
-			assert.Equal(t, tt.input.Location.Address, result.Location.Address)
-			assert.Equal(t, tt.input.Date, result.Date)
+	t.Run("Error - longitud inválida", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+		input := createValidInput()
+		input.Longitude = 181
+		// Act
+		crime, err := useCase.Execute(ctx, input)
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, crime)
+		assert.Equal(t, "la longitud debe estar entre -180 y 180", err.Error())
+	})
 
-			// Verificar que se llamó al repositorio
-			mockRepo.AssertExpectations(t)
-		})
-	}
+	t.Run("Error - dirección vacía", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+		input := createValidInput()
+		input.Address = ""
+		// Act
+		crime, err := useCase.Execute(ctx, input)
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, crime)
+		assert.Equal(t, "la dirección es requerida", err.Error())
+	})
+
+	t.Run("Error - número de dirección nulo", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+		input := createValidInput()
+		input.AddressNumber = ""
+		// Act
+		crime, err := useCase.Execute(ctx, input)
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, crime)
+		assert.Equal(t, "el número de la dirección es requerido", err.Error())
+	})
+
+	t.Run("Error - ciudad nula", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+		input := createValidInput()
+		input.City = ""
+		// Act
+		crime, err := useCase.Execute(ctx, input)
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, crime)
+		assert.Equal(t, "la ciudad es requerida", err.Error())
+	})
+
+	t.Run("Error - provincia nula", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+		input := createValidInput()
+		input.Province = ""
+		// Act
+		crime, err := useCase.Execute(ctx, input)
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, crime)
+		assert.Equal(t, "la provincia es requerida", err.Error())
+	})
+
+	t.Run("Error - país nulo", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+		input := createValidInput()
+		input.Country = ""
+		// Act
+		crime, err := useCase.Execute(ctx, input)
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, crime)
+		assert.Equal(t, "el país es requerido", err.Error())
+	})
+
+	t.Run("Error - código postal nulo", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+		input := createValidInput()
+		input.ZipCode = ""
+		// Act
+		crime, err := useCase.Execute(ctx, input)
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, crime)
+		assert.Equal(t, "el código postal es requerido", err.Error())
+	})
+
+	t.Run("Error - error del repositorio", func(t *testing.T) {
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+
+		input := createValidInput()
+
+		expectedError := errors.New("error al crear el delito")
+		mockRepo.EXPECT().Create(ctx, mock.AnythingOfType("*entities.Crime")).Return(expectedError)
+
+		crime, err := useCase.Execute(ctx, input)
+
+		assert.Error(t, err)
+		assert.Nil(t, crime)
+		assert.Contains(t, err.Error(), expectedError.Error())
+	})
+
+	t.Run("Error al crear el delito", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+		input := createValidInput()
+		mockRepo.On("Create", ctx, mock.AnythingOfType("*entities.Crime")).Return(assert.AnError)
+		// Act
+		crime, err := useCase.Execute(ctx, input)
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, crime)
+	})
+
+	t.Run("Validación inválida", func(t *testing.T) {
+		// Arrange
+		mockRepo := mocks.NewCrimeRepository(t)
+		useCase := usecases.NewCreateCrimeUseCase(mockRepo)
+		input := createValidInput()
+		input.Title = "" // Inválido
+		// Act
+		crime, err := useCase.Execute(ctx, input)
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, crime)
+	})
 }

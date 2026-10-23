@@ -1,0 +1,72 @@
+package usecases
+
+import (
+	"context"
+	"fmt"
+
+	"go-crime_map_backend/internal/domain/entities"
+	"go-crime_map_backend/internal/domain/repositories"
+	"go-crime_map_backend/internal/domain/usecases"
+)
+
+// UpdateCrimeStatusInput representa los datos necesarios para actualizar el estado
+type UpdateCrimeStatusInput struct {
+	UUID   string
+	Status string
+}
+
+// UpdateCrimeStatusUseCase implementa la lógica de negocio para actualizar el estado de un delito
+type UpdateCrimeStatusUseCase struct {
+	crimeRepository repositories.CrimeRepository
+}
+
+// NewUpdateCrimeStatusUseCase crea una nueva instancia del caso de uso
+func NewUpdateCrimeStatusUseCase(repo repositories.CrimeRepository) *UpdateCrimeStatusUseCase {
+	return &UpdateCrimeStatusUseCase{
+		crimeRepository: repo,
+	}
+}
+
+// Execute ejecuta el caso de uso
+func (uc *UpdateCrimeStatusUseCase) Execute(ctx context.Context, input usecases.UpdateCrimeStatusInput) error {
+	// Validar datos de entrada
+	if input.UUID == "" {
+		return fmt.Errorf("el UUID es requerido")
+	}
+	if input.Status == "" {
+		return fmt.Errorf("el estado es requerido")
+	}
+
+	// Obtener el delito del repositorio
+	crime, err := uc.crimeRepository.GetByUUID(ctx, input.UUID)
+	if err != nil {
+		if err == repositories.ErrNotFound {
+			return err
+		}
+		return fmt.Errorf("error al obtener el delito: %w", err)
+	}
+
+	if crime == nil {
+		return repositories.ErrNotFound
+	}
+
+	// Validar que el delito no esté eliminado
+	if crime.Status == string(entities.CrimeStatusDeleted) {
+		return ErrCrimeAlreadyDeleted
+	}
+
+	// Validar que el nuevo estado sea válido
+	if input.Status != string(entities.CrimeStatusActive) && input.Status != string(entities.CrimeStatusInactive) {
+		return ErrInvalidStatusTransition
+	}
+
+	// Actualizar el estado
+	crime.Status = input.Status
+
+	// Guardar en el repositorio
+	if err := uc.crimeRepository.Update(ctx, crime); err != nil {
+		return fmt.Errorf("error al actualizar el delito: %w", err)
+	}
+
+	return nil
+}

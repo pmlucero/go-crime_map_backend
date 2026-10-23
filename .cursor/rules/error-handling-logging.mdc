@@ -1,0 +1,71 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Guía de Manejo de Errores y Logging
+
+## Errores Personalizados
+- Definir tipos de error en [internal/domain/errors/](mdc:internal/domain/errors)
+- Usar nombres descriptivos: `ErrNotFound`, `ErrInvalidInput`, etc.
+- Implementar interface `error`
+- Incluir detalles relevantes en el mensaje
+- Mantener consistencia en el formato
+
+## Manejo de Errores
+```go
+// Ejemplo de manejo de error
+if err != nil {
+    return fmt.Errorf("failed to process request: %w", err)
+}
+```
+
+## Wrapping de Errores
+- Usar `%w` para wrap de errores
+- Mantener la cadena de errores
+- Agregar contexto significativo
+- No exponer detalles internos
+- Usar `errors.Is()` y `errors.As()`
+
+## Niveles de Log
+- ERROR: Errores que requieren atención
+- WARN: Situaciones inesperadas pero manejables
+- INFO: Información de operaciones normales
+- DEBUG: Detalles para debugging
+
+## Estructura de Logs
+```go
+logger.Error("failed to process transaction",
+    "error", err,
+    "transaction_id", txID,
+    "user_id", userID,
+)
+```
+
+## Contexto en Logs
+- Incluir IDs de transacción
+- Agregar timestamps
+- Incluir información del usuario
+- Agregar metadata relevante
+- Mantener consistencia en las claves
+
+## Seguridad en Logs
+- No loggear datos sensibles
+- Sanitizar información personal
+- Rotar archivos de log
+- Establecer niveles de retención
+- Implementar backups
+
+## Monitoreo
+- Implementar métricas clave
+- Usar tracing distribuido
+- Configurar alertas
+- Mantener dashboards actualizados
+- Documentar KPIs
+
+## Buenas Prácticas
+- Centralizar configuración de logging
+- Usar logging estructurado
+- Implementar rate limiting en logs
+- Mantener logs legibles
+- Documentar códigos de error

@@ -1,0 +1,71 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Guía de Testing
+
+## Estructura de Tests
+- Todos los tests deben estar en un directorio `tests` dentro del paquete que prueban
+- Los archivos de test deben tener el sufijo `_test.go`
+- Los mocks deben estar en [internal/mocks/](mdc:internal/mocks)
+- Ejemplos de tests: [internal/usecases/tests/](mdc:internal/usecases/tests)
+
+## Convenciones de Nombrado
+- Funciones de test: `Test[NombreFuncion]_[Escenario]`
+- Funciones de benchmark: `Benchmark[NombreFuncion]`
+- Tests en tabla: Usar nombres descriptivos para cada caso
+- Mocks: Prefijo `Mock` seguido del nombre de la interfaz
+
+## Organización de Tests
+```go
+func TestMiFuncion_Escenario(t *testing.T) {
+    // Arrange
+    // Preparación del test
+
+    // Act
+    // Ejecución de la función a probar
+
+    // Assert
+    // Verificación de resultados
+}
+```
+
+## Cobertura
+- Mínimo 80% de cobertura por paquete
+- Usar `go test -cover` para verificar
+- Generar reportes con `go test -coverprofile`
+- Priorizar casos críticos y edge cases
+
+## Mocks
+- Usar `NewMockXXX()` para crear instancias
+- Definir comportamiento esperado claramente
+- Verificar llamadas a métodos cuando sea relevante
+- Mantener mocks simples y enfocados
+
+## Buenas Prácticas
+- Un assert por test cuando sea posible
+- Usar subtests para casos relacionados
+- Limpiar recursos en `t.Cleanup()`
+- Documentar casos de prueba complejos
+- Mantener tests independientes entre sí
+
+## Tests de Integración
+- Usar contenedores para dependencias
+- Limpiar datos después de cada test
+- Manejar timeouts apropiadamente
+- Documentar prerequisitos
+- Usar variables de entorno para configuración
+
+## Debugging
+- Usar `t.Log` para información relevante
+- Implementar logs detallados en fallos
+- Mantener mensajes de error descriptivos
+- Usar `t.Helper()` para funciones auxiliares
+
+## Mantenimiento
+- Actualizar tests cuando cambia la funcionalidad
+- Eliminar tests obsoletos
+- Refactorizar tests duplicados
+- Mantener suite de tests rápida
+- Revisar falsos positivos/negativos

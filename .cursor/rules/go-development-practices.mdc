@@ -1,0 +1,81 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Guía de Desarrollo en Go
+
+## Estructura del Proyecto
+- El proyecto sigue los principios de Clean Architecture
+- La estructura de directorios principal está en [internal/](mdc:internal)
+- Los casos de uso se encuentran en [internal/usecases/](mdc:internal/usecases)
+- Las entidades del dominio están en [internal/domain/](mdc:internal/domain)
+- La infraestructura se maneja en [internal/infrastructure/](mdc:internal/infrastructure)
+- Las interfaces de API están en [internal/interface/](mdc:internal/interface)
+
+## Convenciones de Código
+- Usar `gofmt` para formateo de código
+- Seguir las convenciones de nombrado de Go:
+  - CamelCase para exportación pública
+  - camelCase para uso interno
+  - Usar nombres descriptivos y concisos
+- Documentar todas las funciones públicas con comentarios
+- Mantener funciones pequeñas y enfocadas
+- Evitar el uso de variables globales
+
+## Manejo de Errores
+- Usar tipos de error personalizados cuando sea necesario
+- Siempre verificar errores retornados
+- No usar panic() en código de producción
+- Documentar los posibles errores en comentarios
+- Usar wrap de errores para mantener el contexto
+
+## Testing
+- Los tests deben seguir el patrón AAA (Arrange-Act-Assert)
+- Ubicar los tests en el directorio `tests` de cada paquete
+- Nombrar los archivos de test con sufijo `_test.go`
+- Mantener una cobertura mínima del 80%
+- Usar mocks para dependencias externas
+- Implementar tanto tests unitarios como de integración
+
+## Base de Datos
+- Usar transacciones para operaciones múltiples
+- Implementar migraciones para cambios en el esquema
+- Validar datos antes de operaciones en DB
+- Usar índices apropiadamente
+- Manejar conexiones eficientemente
+
+## API REST
+- Usar verbos HTTP apropiadamente
+- Implementar versionado en las rutas
+- Validar input en middleware
+- Mantener consistencia en respuestas de error
+- Documentar endpoints con Swagger
+
+## Logging y Monitoreo
+- Usar niveles de log apropiados (INFO, ERROR, DEBUG)
+- Incluir contexto relevante en logs
+- Implementar tracing para operaciones complejas
+- Monitorear métricas clave
+- Mantener logs estructurados
+
+## Seguridad
+- Validar todos los inputs
+- Usar HTTPS en producción
+- Implementar rate limiting
+- Seguir principios de mínimo privilegio
+- Mantener dependencias actualizadas
+
+## Control de Versiones
+- Usar commits semánticos
+- Mantener branches pequeños y enfocados
+- Realizar code review para todos los cambios
+- No commitear secretos o configuraciones sensibles
+- Mantener el historial de git limpio
+
+## Rendimiento
+- Usar goroutines apropiadamente
+- Implementar caching cuando sea necesario
+- Optimizar consultas a base de datos
+- Monitorear uso de memoria
+- Realizar profiling cuando sea necesario

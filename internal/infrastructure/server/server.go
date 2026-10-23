@@ -2,70 +2,51 @@ package server
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
-	"go-crime_map_backend/internal/infrastructure/database"
 	"go-crime_map_backend/internal/infrastructure/repositories"
-	crimeHttp "go-crime_map_backend/internal/interfaces/http"
+	"go-crime_map_backend/internal/interface/controllers"
+	"go-crime_map_backend/internal/interface/middleware"
+	"go-crime_map_backend/internal/interface/routes"
+	"go-crime_map_backend/internal/security"
 	"go-crime_map_backend/internal/usecases"
 
+	_ "go-crime_map_backend/docs"
+
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// Server representa el servidor HTTP
 type Server struct {
 	httpServer *http.Server
 	router     *gin.Engine
-	db         *sql.DB
 }
 
-// NewServer crea una nueva instancia del servidor HTTP
+// NewServer crea una nueva instancia del servidor
 func NewServer() *Server {
+	// Configurar modo de Gin
+	gin.SetMode(gin.DebugMode)
+
 	router := gin.Default()
 
-	// Inicializar la conexión a la base de datos
-	var dbConfig *database.Config
-	if os.Getenv("TEST_MODE") == "true" {
-		fmt.Println("Usando configuración de base de datos de test")
-		dbConfig = database.NewTestConfig()
-	} else {
-		fmt.Println("Usando configuración de base de datos de producción")
-		dbConfig = database.NewConfig()
-	}
+	// Configurar middleware básico
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
 
-	db, err := database.NewPostgresDB(dbConfig)
-	if err != nil {
-		panic(fmt.Sprintf("Error al conectar con la base de datos: %v", err))
-	}
-
-	// Inicializar el repositorio de PostgreSQL
-	crimeRepo := repositories.NewPostgresCrimeRepository(db)
-
-	// Inicializar el caso de uso
-	createCrimeUseCase := usecases.NewCreateCrimeUseCase(crimeRepo)
-
-	// Inicializar el controlador
-	crimeController := crimeHttp.NewCrimeController(createCrimeUseCase)
-
-	// Configurar rutas
+	// Configurar rutas básicas
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
-			"time":   time.Now(),
 		})
 	})
 
-	// Grupo de rutas para la API v1
-	v1 := router.Group("/api/v1")
-	{
-		crimes := v1.Group("/crimes")
-		{
-			crimes.POST("/", crimeController.Create)
-		}
-	}
+	// Configurar Swagger
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	return &Server{
 		router: router,
@@ -73,23 +54,59 @@ func NewServer() *Server {
 			Addr:    ":8080",
 			Handler: router,
 		},
-		db: db,
 	}
 }
 
+// Start inicia el servidor
 func (s *Server) Start() error {
 	fmt.Println("Servidor iniciado en el puerto 8080")
+	fmt.Println("Documentación Swagger disponible en: http://localhost:8080/swagger/index.html")
 	return s.httpServer.ListenAndServe()
 }
 
+// Shutdown detiene el servidor
 func (s *Server) Shutdown() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
-	// Cerrar la conexión a la base de datos
-	if err := s.db.Close(); err != nil {
-		fmt.Printf("Error al cerrar la conexión a la base de datos: %v\n", err)
-	}
-
 	return s.httpServer.Shutdown(ctx)
+}
+
+// SetupRoutes configura las rutas del servidor
+func (s *Server) SetupRoutes(db *sqlx.DB) error {
+	// Crear repositorio
+	crimeRepo := repositories.NewPostgresCrimeRepository(db)
+	securityRepo := security.NewRepository(db.DB)
+
+	// Crear casos de uso
+	createCrimeUseCase := usecases.NewCreateCrimeUseCase(crimeRepo)
+	listCrimesUseCase := usecases.NewListCrimesUseCase(crimeRepo)
+	updateCrimeStatusUseCase := usecases.NewUpdateCrimeStatusUseCase(crimeRepo)
+	deleteCrimeUseCase := usecases.NewDeleteCrimeUseCase(crimeRepo)
+	getCrimeStatsUseCase := usecases.NewGetCrimeStatsUseCase(crimeRepo)
+	getCrimeUseCase := usecases.NewGetCrimeUseCase(crimeRepo)
+
+	// Crear controlador
+	crimeController := controllers.NewCrimeController(
+		createCrimeUseCase,
+		listCrimesUseCase,
+		updateCrimeStatusUseCase,
+		deleteCrimeUseCase,
+		getCrimeStatsUseCase,
+		getCrimeUseCase,
+	)
+
+	// Crear middleware de autenticación
+	authMiddleware := middleware.AuthMiddleware(securityRepo)
+
+	// Configurar rutas
+	routes.SetupCrimeRoutes(s.router, crimeController, authMiddleware)
+
+	// Imprimir rutas registradas
+	fmt.Println("\nRutas registradas:")
+	for _, route := range s.router.Routes() {
+		fmt.Printf("%s %s\n", route.Method, route.Path)
+	}
+	fmt.Println()
+
+	return nil
 }

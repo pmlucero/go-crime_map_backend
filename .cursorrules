@@ -1,0 +1,77 @@
+{
+    "rules": {
+        "test_structure": {
+            "description": "Estructura de directorios para pruebas",
+            "enabled": true,
+            "patterns": [
+                {
+                    "pattern": "**/tests/*_test.go",
+                    "message": "Los archivos de prueba deben estar en un directorio 'tests' dentro de cada paquete"
+                }
+            ]
+        },
+        "test_naming": {
+            "description": "Convenciones de nombrado para pruebas",
+            "enabled": true,
+            "patterns": [
+                {
+                    "pattern": "func Test[A-Z][a-zA-Z0-9]*_",
+                    "message": "Los nombres de las funciones de prueba deben seguir el patrón Test[NombreFuncion]_[Escenario]"
+                }
+            ]
+        },
+        "test_coverage": {
+            "description": "Requisitos de cobertura de código",
+            "enabled": true,
+            "patterns": [
+                {
+                    "pattern": "// coverage:",
+                    "message": "Cada archivo debe tener un comentario indicando su cobertura actual"
+                }
+            ]
+        },
+        "test_organization": {
+            "description": "Organización de pruebas",
+            "enabled": true,
+            "patterns": [
+                {
+                    "pattern": "// Arrange",
+                    "message": "Las pruebas deben seguir el patrón Arrange-Act-Assert"
+                },
+                {
+                    "pattern": "// Act",
+                    "message": "Las pruebas deben seguir el patrón Arrange-Act-Assert"
+                },
+                {
+                    "pattern": "// Assert",
+                    "message": "Las pruebas deben seguir el patrón Arrange-Act-Assert"
+                }
+            ]
+        },
+        "test_mocks": {
+            "description": "Ubicación de mocks",
+            "enabled": true,
+            "patterns": [
+                {
+                    "pattern": "**/tests/mocks/*.go",
+                    "message": "Los archivos de mock deben estar en un directorio 'mocks' dentro de 'tests'"
+                }
+            ]
+        },
+        "test_cleanup": {
+            "description": "Limpieza de recursos en pruebas",
+            "enabled": true,
+            "patterns": [
+                {
+                    "pattern": "t.Cleanup(",
+                    "message": "Usar t.Cleanup() para limpiar recursos en pruebas"
+                }
+            ]
+        }
+    },
+    "ignore": [
+        "vendor/**",
+        "node_modules/**",
+        "coverage/**"
+    ]
+} 

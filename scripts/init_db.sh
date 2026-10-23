@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# Inicializar la base de datos de producción
-echo "Inicializando base de datos de producción..."
-psql -U $USER postgres -f scripts/init_db.sql
+# Cargar variables de entorno
+source .env
 
-echo "Base de datos inicializada correctamente" 
+# Crear la base de datos si no existe
+PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USER -tc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -q 1 || \
+PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USER -c "CREATE DATABASE $DB_NAME"
+
+# Aplicar el esquema
+PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f internal/infrastructure/database/schema.sql 

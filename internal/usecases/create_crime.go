@@ -2,176 +2,102 @@ package usecases
 
 import (
 	"context"
-	"errors"
-	"time"
+	"fmt"
 
 	"go-crime_map_backend/internal/domain/entities"
 	"go-crime_map_backend/internal/domain/repositories"
+	"go-crime_map_backend/internal/domain/usecases"
 
 	"github.com/google/uuid"
 )
 
-var (
-	// ErrInvalidType se retorna cuando el tipo de delito es inválido
-	ErrInvalidType = errors.New("el tipo de delito es inválido")
-
-	// ErrEmptyDescription se retorna cuando la descripción está vacía
-	ErrEmptyDescription = errors.New("la descripción es requerida")
-
-	// ErrDescriptionTooLong se retorna cuando la descripción excede el límite de caracteres
-	ErrDescriptionTooLong = errors.New("la descripción no puede exceder los 500 caracteres")
-
-	// ErrFutureDate se retorna cuando la fecha es futura
-	ErrFutureDate = errors.New("la fecha del delito no puede ser futura")
-
-	// ErrInvalidLatitude se retorna cuando la latitud es inválida
-	ErrInvalidLatitude = errors.New("latitud inválida")
-
-	// ErrInvalidLongitude se retorna cuando la longitud es inválida
-	ErrInvalidLongitude = errors.New("longitud inválida")
-
-	// ErrDuplicateCrime se retorna cuando se intenta crear un delito duplicado
-	ErrDuplicateCrime = errors.New("ya existe un delito con los mismos datos")
-
-	// validCrimeTypes define los tipos de delito válidos
-	validCrimeTypes = map[string]bool{
-		"ROBO":         true,
-		"HURTO":        true,
-		"VANDALISMO":   true,
-		"AGRESION":     true,
-		"FRAUDE":       true,
-		"TRAFICO":      true,
-		"ACOSO":        true,
-		"VIOLENCIA":    true,
-		"ALLANAMIENTO": true,
-		"ESTAFA":       true,
-	}
-
-	// maxDescriptionLength define la longitud máxima permitida para la descripción
-	maxDescriptionLength = 500
-)
-
 // CreateCrimeInput representa los datos necesarios para crear un delito
 type CreateCrimeInput struct {
-	Type        string    `json:"type"`
-	Description string    `json:"description"`
-	Location    Location  `json:"location"`
-	Date        time.Time `json:"date"`
+	Title         string
+	Description   string
+	Type          string
+	Latitude      float64
+	Longitude     float64
+	Address       string
+	AddressNumber string
+	City          string
+	Province      string
+	Country       string
+	ZipCode       string
 }
 
-// Location representa la ubicación del delito
-type Location struct {
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
-	Address   string  `json:"address"`
-}
-
-// CreateCrimeUseCase maneja la lógica de negocio para crear un nuevo delito
+// CreateCrimeUseCase implementa la lógica de negocio para crear delitos
 type CreateCrimeUseCase struct {
-	crimeRepo repositories.CrimeRepository
+	crimeRepository repositories.CrimeRepository
 }
 
 // NewCreateCrimeUseCase crea una nueva instancia del caso de uso
 func NewCreateCrimeUseCase(repo repositories.CrimeRepository) *CreateCrimeUseCase {
 	return &CreateCrimeUseCase{
-		crimeRepo: repo,
+		crimeRepository: repo,
 	}
 }
 
-// Execute ejecuta el caso de uso para crear un nuevo delito
-func (uc *CreateCrimeUseCase) Execute(ctx context.Context, input CreateCrimeInput) (*entities.Crime, error) {
-	// Validar que la fecha no sea futura
-	if input.Date.After(time.Now()) {
-		return nil, ErrFutureDate
+// Execute ejecuta el caso de uso
+func (uc *CreateCrimeUseCase) Execute(ctx context.Context, input usecases.CreateCrimeInput) (*entities.Crime, error) {
+	// Validar datos de entrada
+	if input.Title == "" {
+		return nil, fmt.Errorf("el título es requerido")
 	}
-
-	// Validar que el tipo de delito sea válido
-	if !validCrimeTypes[input.Type] {
-		return nil, ErrInvalidType
-	}
-
-	// Validar que la descripción no esté vacía
 	if input.Description == "" {
-		return nil, ErrEmptyDescription
+		return nil, fmt.Errorf("la descripción es requerida")
+	}
+	if input.Type == "" {
+		return nil, fmt.Errorf("el tipo es requerido")
+	}
+	if input.Latitude < -90 || input.Latitude > 90 {
+		return nil, fmt.Errorf("la latitud debe estar entre -90 y 90")
+	}
+	if input.Longitude < -180 || input.Longitude > 180 {
+		return nil, fmt.Errorf("la longitud debe estar entre -180 y 180")
+	}
+	if input.Address == "" {
+		return nil, fmt.Errorf("la dirección es requerida")
+	}
+	if input.AddressNumber == "" {
+		return nil, fmt.Errorf("el número de la dirección es requerido")
+	}
+	if input.City == "" {
+		return nil, fmt.Errorf("la ciudad es requerida")
+	}
+	if input.Province == "" {
+		return nil, fmt.Errorf("la provincia es requerida")
+	}
+	if input.Country == "" {
+		return nil, fmt.Errorf("el país es requerido")
+	}
+	if input.ZipCode == "" {
+		return nil, fmt.Errorf("el código postal es requerido")
 	}
 
-	// Validar que la descripción no exceda el límite de caracteres
-	if len(input.Description) > maxDescriptionLength {
-		return nil, ErrDescriptionTooLong
-	}
-
-	// Validar que la ubicación sea válida
-	if input.Location.Latitude <= -90 || input.Location.Latitude >= 90 {
-		return nil, ErrInvalidLatitude
-	}
-	if input.Location.Longitude <= -180 || input.Location.Longitude >= 180 {
-		return nil, ErrInvalidLongitude
-	}
-
-	// Verificar si existe un delito duplicado
-	crimes, err := uc.crimeRepo.GetAll(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, crime := range crimes {
-		// Comparar fechas con una tolerancia de 1 minuto
-		dateDiff := crime.Date.Sub(input.Date)
-		if dateDiff < 0 {
-			dateDiff = -dateDiff
-		}
-		if dateDiff > time.Minute {
-			continue
-		}
-
-		// Comparar coordenadas con una tolerancia de 0.000001 grados
-		latDiff := crime.Location.Latitude - input.Location.Latitude
-		if latDiff < 0 {
-			latDiff = -latDiff
-		}
-		if latDiff > 0.000001 {
-			continue
-		}
-
-		lonDiff := crime.Location.Longitude - input.Location.Longitude
-		if lonDiff < 0 {
-			lonDiff = -lonDiff
-		}
-		if lonDiff > 0.000001 {
-			continue
-		}
-
-		// Si llegamos aquí, todas las comparaciones pasaron
-		if crime.Type == input.Type &&
-			crime.Description == input.Description {
-			return nil, ErrDuplicateCrime
-		}
-	}
-
-	// Crear la entidad Crime
+	// Crear entidad Crime
 	crime := &entities.Crime{
-		ID:          generateID(),
-		Type:        input.Type,
+		UUID:        uuid.New().String(),
+		Title:       input.Title,
 		Description: input.Description,
+		Type:        input.Type,
+		Status:      "ACTIVE",
 		Location: entities.Location{
-			Latitude:  input.Location.Latitude,
-			Longitude: input.Location.Longitude,
-			Address:   input.Location.Address,
+			Latitude:      input.Latitude,
+			Longitude:     input.Longitude,
+			Address:       input.Address,
+			AddressNumber: input.AddressNumber,
+			City:          input.City,
+			Province:      input.Province,
+			Country:       input.Country,
+			ZipCode:       input.ZipCode,
 		},
-		Date:      input.Date,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
 	}
 
 	// Guardar en el repositorio
-	if err := uc.crimeRepo.Create(ctx, crime); err != nil {
-		return nil, err
+	if err := uc.crimeRepository.Create(ctx, crime); err != nil {
+		return nil, fmt.Errorf("error al crear el delito: %w", err)
 	}
 
 	return crime, nil
-}
-
-// generateID genera un ID único para el delito usando UUID v4
-func generateID() string {
-	return uuid.New().String()
 }
