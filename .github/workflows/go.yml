@@ -1,0 +1,79 @@
+name: go
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    # The two supported Go releases, as in CONTRIBUTING.md ("Code").
+    name: test (go ${{ matrix.go }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ["1.26", "1.27"]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: crime_map
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ matrix.go }}.x
+      - name: Check go.mod and go.sum are tidy
+        run: go mod tidy -diff
+      - name: Build
+        run: go build ./...
+      - name: Vet
+        run: go vet ./...
+      - name: Prepare databases (spec §7, AC-26)
+        run: |
+          psql -h localhost -U postgres -c "CREATE DATABASE crime_map_test;"
+          for db in crime_map crime_map_test; do
+            psql -h localhost -U postgres -d "$db" -v ON_ERROR_STOP=1 \
+              -f internal/infrastructure/database/schema.sql
+          done
+      - name: Test with the race detector
+        # -p 1: integration tests share one database (CLAUDE.md, "Testing").
+        run: go test -race -p 1 ./...
+
+  golangci-lint:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # only-new-issues reads the PR diff.
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.x"
+      - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.14.0
+          # Existing code predates the linter configuration and has ~160 findings.
+          # Only new and changed lines are checked until M1 of docs/plan/v1.md fixes
+          # them; that PR removes this setting.
+          only-new-issues: true
