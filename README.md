@@ -1,6 +1,7 @@
 # Crime Map Backend
 
-[![CI](https://github.com/pmlucero/go-crime_map_backend/actions/workflows/ci.yml/badge.svg)](https://github.com/pmlucero/go-crime_map_backend/actions/workflows/ci.yml)
+[![go](https://github.com/pmlucero/go-crime_map_backend/actions/workflows/go.yml/badge.svg)](https://github.com/pmlucero/go-crime_map_backend/actions/workflows/go.yml)
+[![docs](https://github.com/pmlucero/go-crime_map_backend/actions/workflows/docs.yml/badge.svg)](https://github.com/pmlucero/go-crime_map_backend/actions/workflows/docs.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
 REST API in Go for reporting and querying geolocated crime incidents, built with
@@ -102,7 +103,7 @@ createdb -h localhost -U postgres crime_map_test
 psql postgres://postgres:postgres@localhost:5432/crime_map_test \
   -f internal/infrastructure/database/schema.sql
 
-go test ./...
+go test -race -p 1 ./...   # -p 1: integration tests share one database
 ./coverage.sh   # coverage summary
 ```
 
@@ -110,6 +111,10 @@ Run a single test: `go test ./internal/interface/controllers/tests -run TestGetC
 
 Regenerate the OpenAPI docs after changing handler annotations:
 `go install github.com/swaggo/swag/cmd/swag@latest && swag init -g cmd/api/main.go`.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Coding conventions are in [CLAUDE.md](CLAUDE.md).
 
 ## Design and status
 
