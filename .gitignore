@@ -38,3 +38,10 @@ coverage.out
 coverage.html
 last_*_output.txt
 *.bak
+
+# Editors and OS
+*~
+.DS_Store
+
+# Tooling
+node_modules/
