@@ -1,6 +1,6 @@
 repos:
 - repo: https://github.com/golangci/golangci-lint
-  rev: v2.1.6
+  rev: v2.14.0
   hooks:
     - id: golangci-lint
       args: [--timeout=5m]
@@ -10,11 +10,18 @@ repos:
   hooks:
     - id: go-fmt
     - id: go-imports
-    - id: go-unit-tests
     - id: go-mod-tidy
 
 - repo: local
   hooks:
+    - id: go-unit-tests
+      name: go unit tests
+      # -p 1: integration tests share one database (CLAUDE.md, "Testing").
+      entry: go test -p 1 ./...
+      language: system
+      types: [go]
+      pass_filenames: false
+
     - id: test-structure
       name: Test Structure Validation
       entry: |
