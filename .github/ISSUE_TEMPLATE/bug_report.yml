@@ -1,0 +1,87 @@
+name: Bug report
+description: The API returned a wrong response, status code or data, or crashed.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please check the [core spec](https://github.com/pmlucero/go-crime_map_backend/blob/main/docs/spec/core.md) first: some behaviors are by design, and known gaps are listed as `Not met` in §9.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: The release tag, or the commit SHA you are running.
+      placeholder: v0.1.0 or 8d0e229
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Go version and PostgreSQL version.
+      placeholder: macOS 15 arm64, Go 1.27, PostgreSQL 16
+    validations:
+      required: true
+
+  - type: dropdown
+    id: endpoint
+    attributes:
+      label: Affected endpoint
+      options:
+        - POST /crimes
+        - GET /crimes
+        - GET /crimes/{uuid}
+        - PATCH /crimes/{uuid}/status
+        - DELETE /crimes/{uuid}
+        - GET /crimes/stats
+        - GET /health
+        - Authentication (X-API-Key)
+        - Swagger / OpenAPI docs
+        - Database schema
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: request
+    attributes:
+      label: Request
+      description: The exact request, for example as a `curl` command. Replace the API key with a fake value.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected, and, if possible, the spec section or acceptance criterion (AC-xx) it relates to.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead, including the status code and the response body.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server logs
+      description: Relevant server output. Check that it contains no API keys or private data.
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: Anything I attached contains no API keys, credentials or private data.
+          required: true

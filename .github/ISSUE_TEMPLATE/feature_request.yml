@@ -1,0 +1,73 @@
+name: Feature request
+description: Propose new behavior or a change to existing behavior.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This project follows Spec-Driven Development: behavior is defined in the [spec](https://github.com/pmlucero/go-crime_map_backend/blob/main/docs/spec/core.md) before it is implemented, and significant decisions are recorded as [ADRs](https://github.com/pmlucero/go-crime_map_backend/blob/main/docs/adr/README.md).
+
+        Please read the [non-goals](https://github.com/pmlucero/go-crime_map_backend/blob/main/docs/vision.md#4-non-goals) first. In particular, the API does not store data that identifies people, and it has no end-user accounts.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and why is it hard or impossible today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What should the API do? Include example requests and responses if relevant.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - crimes (create, read, status, delete)
+        - listing and filters
+        - statistics
+        - geospatial search
+        - authentication and API keys
+        - data model and schema
+        - API docs (OpenAPI)
+        - docs
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches or workarounds, and why they fall short.
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Expected design impact
+      description: Your best guess. The maintainer will confirm.
+      options:
+        - No spec change (fits current spec)
+        - Spec change needed
+        - Spec change and new ADR needed (HTTP contract, data model, authentication or dependency)
+        - Not sure
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: This does not add data that identifies people (see non-goals).
+          required: true
