@@ -1,4 +1,4 @@
-basePath: /api/v1
+basePath: /
 definitions:
   controllers.CreateCrimeRequest:
     properties:
@@ -363,6 +363,6 @@ paths:
 securityDefinitions:
   ApiKeyAuth:
     in: header
-    name: Authorization
+    name: X-API-Key
     type: apiKey
 swagger: "2.0"

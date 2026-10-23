@@ -25,11 +25,11 @@ import (
 // @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
 
 // @host      localhost:8080
-// @BasePath  /api/v1
+// @BasePath  /
 
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
-// @name Authorization
+// @name X-API-Key
 func main() {
 	// Obtener variables de entorno
 	dbURL := os.Getenv("DATABASE_URL")

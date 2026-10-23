@@ -185,7 +185,9 @@ func (r *PostgresCrimeRepository) List(ctx context.Context, page, limit int, sta
 func (r *PostgresCrimeRepository) GetByID(ctx context.Context, id int64) (*entities.Crime, error) {
 	crime := &entities.Crime{}
 	query := `
-		SELECT id, uuid, type, description, latitude, longitude, status, created_at, updated_at, deleted_at
+		SELECT id, uuid, title, description, crime_type as type, status,
+			   latitude, longitude, address, address_number, city, province, country, zip_code,
+			   created_at, updated_at, deleted_at
 		FROM crimes
 		WHERE id = $1`
 

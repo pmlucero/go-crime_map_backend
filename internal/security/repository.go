@@ -22,7 +22,7 @@ func (r *Repository) ValidateAPIKey(ctx context.Context, key string) (*entities.
 	query := `
 		SELECT key, user_id, is_active, created_at, expires_at
 		FROM api_keys
-		WHERE key = ? AND is_active = 1
+		WHERE key = $1 AND is_active = true
 	`
 
 	apiKey := &entities.APIKey{}
@@ -46,7 +46,7 @@ func (r *Repository) ValidateAPIKey(ctx context.Context, key string) (*entities.
 func (r *Repository) CreateAPIKey(ctx context.Context, apiKey *entities.APIKey) error {
 	query := `
 		INSERT INTO api_keys (key, user_id, is_active, expires_at, created_at)
-		VALUES (?, ?, ?, ?, ?)
+		VALUES ($1, $2, $3, $4, $5)
 	`
 
 	_, err := r.db.ExecContext(ctx, query,
@@ -65,7 +65,7 @@ func (r *Repository) GetAPIKey(ctx context.Context, key string) (*entities.APIKe
 	query := `
 		SELECT key, user_id, is_active, expires_at, created_at
 		FROM api_keys
-		WHERE key = ?
+		WHERE key = $1
 	`
 
 	apiKey := &entities.APIKey{}
@@ -123,7 +123,7 @@ func (r *Repository) RevokeAPIKey(ctx context.Context, key string) error {
 	query := `
 		UPDATE api_keys
 		SET is_active = false
-		WHERE key = ?
+		WHERE key = $1
 	`
 
 	_, err := r.db.ExecContext(ctx, query, key)

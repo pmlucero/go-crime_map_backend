@@ -1,91 +1,29 @@
-# Roadmap del Proyecto
+# Roadmap
 
-## Fase 1: Estructura Base y Configuración ✅
-- [x] Configuración inicial del proyecto
-- [x] Estructura de directorios
-- [x] Configuración de dependencias
-- [x] Configuración de base de datos
-- [x] Configuración de logging
-- [x] Configuración de variables de entorno
+## Done
 
-## Fase 2: Implementación de Entidades y Repositorios ✅
-- [x] Definición de entidades
-  - [x] Crime
-  - [x] Location
-  - [x] CrimeStats
-- [x] Implementación de repositorios
-  - [x] CrimeRepository
-  - [x] PostgresCrimeRepository
+- Clean Architecture layout: domain, use cases, interface and infrastructure layers.
+- Crime CRUD: create, list (paginated), get by UUID, status change, soft delete.
+- Aggregated statistics by type, status and address.
+- PostgreSQL persistence with a geospatial index (`earthdistance`).
+- API key authentication with expiration and revocation.
+- OpenAPI docs with Swagger UI.
+- Unit tests with mocks, PostgreSQL integration tests, and CI on GitHub Actions.
+- Pre-commit hooks: `gofmt`, `goimports`, `golangci-lint` and test conventions.
 
-## Fase 3: Implementación de Casos de Uso ✅
-- [x] CreateCrime
-- [x] UpdateCrime
-- [x] DeleteCrime
-- [x] GetCrime
-- [x] ListCrimes
-- [x] GetCrimeStats
-- [x] UpdateCrimeStatus
+## Next
 
-## Fase 4: Implementación de API ✅
-- [x] Configuración de servidor HTTP
-- [x] Implementación de controladores
-- [x] Implementación de rutas
-- [x] Middleware de autenticación
-- [x] Middleware de validación
-- [x] Middleware de logging
+- [ ] Apply the list filters already documented in OpenAPI (`type`, `status`, date range).
+- [ ] Return `404` instead of `500` when a crime does not exist.
+- [ ] Radius search around a point, using the existing geospatial index.
+- [ ] Expose the API key management endpoints (`internal/api`) through the Gin server.
+- [ ] Use a single migration tool (golang-migrate) instead of `schema.sql` plus `migrations/`.
+- [ ] Load all configuration from environment variables.
+- [ ] Run `golangci-lint` in CI.
 
-## Fase 5: Pruebas y Documentación ✅
-- [x] Pruebas unitarias
-  - [x] Entidades
-  - [x] Repositorios
-  - [x] Casos de uso
-  - [x] Controladores
-- [x] Pruebas de integración
-  - [x] API
-  - [x] Base de datos
-- [x] Documentación
-  - [x] API
-  - [x] Código
-  - [x] Instalación
-  - [x] Uso
+## Later
 
-## Fase 6: Mejoras y Optimizaciones ✅
-- [x] Mejora de cobertura de pruebas
-- [x] Optimización de consultas
-- [x] Mejora de manejo de errores
-- [x] Mejora de logging
-- [x] Mejora de documentación
-
-## Fase 7: Despliegue y Monitoreo
-- [ ] Configuración de CI/CD
-- [ ] Configuración de monitoreo
-- [ ] Configuración de alertas
-- [ ] Configuración de backups
-- [ ] Configuración de alta disponibilidad
-
-## Fase 8: Mejoras Futuras
-- [ ] Implementación de caché
-- [ ] Implementación de búsqueda
-- [ ] Implementación de notificaciones
-- [ ] Implementación de reportes
-- [ ] Implementación de estadísticas avanzadas 
-
-## Fase 9: Seguridad de la API
-- [x] Implementación de API Key
-  - [x] Generación y almacenamiento seguro de API Keys
-  - [x] Middleware de validación de API Key
-  - [x] Rotación y revocación de API Keys
-  - [x] Documentación de uso de API Key
-  - [ ] Migrar el almacenamiento de API Keys a una base de datos separada para mejorar la seguridad y la independencia entre datos y claves de acceso
-- [ ] Implementación de OAuth2
-  - [ ] Integración con proveedores de OAuth2
-  - [ ] Middleware de autenticación OAuth2
-  - [ ] Gestión de tokens y sesiones
-  - [ ] Control de acceso basado en roles (RBAC)
-  - [ ] Documentación de flujos de autenticación
-- [ ] Mejoras de seguridad general
-  - [ ] Implementación de rate limiting
-  - [ ] Validación de entrada mejorada
-  - [ ] Protección contra ataques comunes (XSS, CSRF, etc.)
-  - [ ] Auditoría de seguridad
-  - [ ] Documentación de mejores prácticas de seguridad 
+- [ ] OAuth2 / JWT and role-based access control.
+- [ ] Rate limiting and structured logging.
+- [ ] Container image and deployment.
+- [ ] Map frontend.
