@@ -1,7 +1,7 @@
 # Crime Map Backend
 
 [![CI](https://github.com/pmlucero/go-crime_map_backend/actions/workflows/ci.yml/badge.svg)](https://github.com/pmlucero/go-crime_map_backend/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
 REST API in Go for reporting and querying geolocated crime incidents, built with
 Clean Architecture, Gin and PostgreSQL.
@@ -17,7 +17,7 @@ Clean Architecture, Gin and PostgreSQL.
 
 ## Architecture
 
-```
+```text
 cmd/api/                    # Entry point: wiring and HTTP server startup
 internal/
 ├── domain/                 # Entities, repository and use case contracts
@@ -31,7 +31,7 @@ internal/
 │   ├── repositories/       # PostgreSQL repository implementations
 │   └── server/             # HTTP server setup
 └── security/               # API key storage and validation
-docs/                       # Generated OpenAPI spec (swag)
+docs/                       # Vision, spec, ADRs, plan, and the generated OpenAPI spec
 migrations/                 # SQL migrations
 ```
 
@@ -111,10 +111,15 @@ Run a single test: `go test ./internal/interface/controllers/tests -run TestGetC
 Regenerate the OpenAPI docs after changing handler annotations:
 `go install github.com/swaggo/swag/cmd/swag@latest && swag init -g cmd/api/main.go`.
 
-## Roadmap
+## Design and status
 
-See [ROADMAP.md](ROADMAP.md).
+The project follows Spec-Driven Development:
+
+- [Vision](docs/vision.md): purpose, principles and non-goals.
+- [Core spec](docs/spec/core.md): the API contract and its acceptance criteria, with which ones the code meets today.
+- [ADRs](docs/adr/README.md): the architecture decisions and their rationale.
+- [v1 plan](docs/plan/v1.md): the order in which the remaining gaps are closed.
 
 ## License
 
-[MIT](LICENSE)
+[Apache License 2.0](LICENSE)
