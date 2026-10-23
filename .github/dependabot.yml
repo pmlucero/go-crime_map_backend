@@ -1,0 +1,29 @@
+# Keeps SHA-pinned GitHub Actions and Go modules up to date, one grouped weekly PR
+# per ecosystem. Long titles are exempt from the pr-title length limit (pr-metadata.yml).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # Only propose releases that are at least two weeks old: new releases get time
+    # to surface bugs or a compromise before they reach CI. Security updates are
+    # not delayed by the cooldown. Policy: CONTRIBUTING.md, "Dependencies".
+    cooldown:
+      default-days: 14
+    commit-message:
+      prefix: chore(ci)
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 14
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      go-modules:
+        patterns: ["*"]
